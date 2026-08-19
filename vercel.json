@@ -1,7 +1,59 @@
 {
   "rewrites": [
     {
-      "source": "/((?!assets/|_flock\\.js|favicon\\.png|admin|gold|login|signup|checkout|dashboard|diamonds|efootball|predict|spin|tickets|wallet|account).*)",
+      "source": "/admin/:path*",
+      "destination": "/admin/index.html"
+    },
+    {
+      "source": "/gold/:path*",
+      "destination": "/gold/index.html"
+    },
+    {
+      "source": "/login/:path*",
+      "destination": "/login/index.html"
+    },
+    {
+      "source": "/signup/:path*",
+      "destination": "/signup/index.html"
+    },
+    {
+      "source": "/dashboard/:path*",
+      "destination": "/dashboard/index.html"
+    },
+    {
+      "source": "/diamonds/:path*",
+      "destination": "/diamonds/index.html"
+    },
+    {
+      "source": "/efootball/:path*",
+      "destination": "/efootball/index.html"
+    },
+    {
+      "source": "/predict/:path*",
+      "destination": "/predict/index.html"
+    },
+    {
+      "source": "/spin/:path*",
+      "destination": "/spin/index.html"
+    },
+    {
+      "source": "/tickets/:path*",
+      "destination": "/tickets/index.html"
+    },
+    {
+      "source": "/wallet/:path*",
+      "destination": "/wallet/index.html"
+    },
+    {
+      "source": "/account/:path*",
+      "destination": "/account/index.html"
+    },
+    {
+      "source": "/checkout/:path*",
+      "destination": "/checkout/index.html"
+    },
+    {
+      "source": "/((?!assets/|_flock\\.js|favicon\\.png).*)",
       "destination": "/index.html"
     }
   ]
