@@ -154,7 +154,13 @@ export async function l(props) {
     p_payment_id: paymentId
   });
   if (error) throw error;
-  return { url: data?.url || null };
+  const path = data?.path;
+  if (!path) return { url: null };
+  const { data: urlData, error: urlErr } = await supabase.storage
+    .from('payment-proofs')
+    .createSignedUrl(path, 3600);
+  if (urlErr) throw urlErr;
+  return { url: urlData?.signedUrl || null };
 }
 
 // POST: update-member-status
@@ -176,7 +182,13 @@ export async function n(props) {
     p_order_id: orderId
   });
   if (error) throw error;
-  return { url: data?.url || null };
+  const path = data?.path;
+  if (!path) return { url: null };
+  const { data: urlData, error: urlErr } = await supabase.storage
+    .from('screenshot-proofs')
+    .createSignedUrl(path, 3600);
+  if (urlErr) throw urlErr;
+  return { url: urlData?.signedUrl || null };
 }
 
 // POST: submit payment proof / order proof (imported as h in checkout)
