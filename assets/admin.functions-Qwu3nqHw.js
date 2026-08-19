@@ -168,8 +168,7 @@ export async function l(props) {
 
 // POST: update-member-status
 export async function m(props) {
-  // Props come directly from mutate({ userId, status }), not wrapped in data
-  const { userId, status } = props?.data ?? props ?? {};
+  const { userId, status } = props?.data ?? {};
   if (!userId || !status) throw new Error('Missing userId or status');
   const { data, error } = await supabase.rpc('admin_update_member_status', {
     p_user_id: userId,
@@ -752,11 +751,11 @@ export function p_comp(props) {
                       children: "Credit"
                     }),
                     member.status !== 'active' ? j.jsx("button", {
-                      onClick: () => updateMember?.({ userId: member.id, status: 'active' }),
+                      onClick: () => updateMember?.({ data: { userId: member.id, status: 'active' } }),
                       className: "px-2 py-1 bg-primary text-primary-foreground text-xs font-black rounded-full hover:opacity-90",
                       children: "Activate"
                     }) : j.jsx("button", {
-                      onClick: () => updateMember?.({ userId: member.id, status: 'suspended' }),
+                      onClick: () => updateMember?.({ data: { userId: member.id, status: 'suspended' } }),
                       className: "px-2 py-1 bg-destructive text-destructive-foreground text-xs font-black rounded-full hover:opacity-90",
                       children: "Suspend"
                     })

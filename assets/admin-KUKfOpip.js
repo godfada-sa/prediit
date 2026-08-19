@@ -1006,7 +1006,7 @@ function MembersPanel(props) {
         : `No amounts to credit.`);
       setGrantUser(null);
       if (updateMember) {
-        updateMember({ userId: grantUser.id, status: grantUser.status });
+        updateMember({ data: { userId: grantUser.id, status: grantUser.status } });
       } else {
         window.location.reload();
       }
@@ -1096,11 +1096,11 @@ function MembersPanel(props) {
                       children: "Credit"
                     }),
                     member.status !== 'active' ? G.jsx("button", {
-                      onClick: () => updateMember?.({ userId: member.id, status: 'active' }),
+                      onClick: () => updateMember?.({ data: { userId: member.id, status: 'active' } }),
                       className: "px-3 py-1 bg-primary text-primary-foreground text-xs font-black rounded-full hover:opacity-90",
                       children: "Activate"
                     }) : G.jsx("button", {
-                      onClick: () => updateMember?.({ userId: member.id, status: 'suspended' }),
+                      onClick: () => updateMember?.({ data: { userId: member.id, status: 'suspended' } }),
                       className: "px-3 py-1 bg-destructive text-destructive-foreground text-xs font-black rounded-full hover:opacity-90",
                       children: "Suspend"
                     }),
