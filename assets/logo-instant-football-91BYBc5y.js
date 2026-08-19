@@ -1,0 +1,1 @@
+var e=`/assets/logo-instant-football-Cf33tbdR.png`;export{e as t};

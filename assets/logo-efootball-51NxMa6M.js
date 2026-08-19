@@ -1,0 +1,1 @@
+var e=`/assets/logo-efootball-C2i26Ik2.png`;export{e as t};

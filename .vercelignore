@@ -1,0 +1,19 @@
+# SQL files — contains schema, RPCs, security config, default admin code
+*.sql
+init_supabase.sql
+admin_security_fix.sql
+fix_realtime_and_security.sql
+gold_purchase_flow.sql
+
+# Supabase edge function source
+supabase/
+
+# Test/scratch files
+test_*.sql
+test_*.js
+
+# Dev server files
+.freebuff/
+
+# Non-production assets
+_redirects

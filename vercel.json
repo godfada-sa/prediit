@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/((?!assets/|_flock\\.js|favicon\\.png|admin|gold|login|signup|checkout|dashboard|diamonds|efootball|predict|spin|tickets|wallet|account).*)",
+      "destination": "/index.html"
+    }
+  ]
+}

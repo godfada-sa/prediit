@@ -1,0 +1,1 @@
+var e=`/assets/logo-spin-bottle-BJMUd8cw.jpg`;export{e as t};

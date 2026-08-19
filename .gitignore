@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# SQL migration files (contain schema + secrets)
+*.sql
+init_supabase.sql
+admin_security_fix.sql
+fix_realtime_and_security.sql
+gold_purchase_flow.sql
+
+# Supabase edge function source
+supabase/
+
+# Vercel
+.vercel/
+.freebuff/
+
+# Build output
+dist/
+build/
+
+# OS files
+.DS_Store
+Thumbs.db

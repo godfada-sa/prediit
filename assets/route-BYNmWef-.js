@@ -1,0 +1,1 @@
+import{o as e}from"./useStore-BI3_Wmfo.js";import{O as t}from"./index-sG8SpmM9.js";var n=e(),r=()=>(0,n.jsx)(t,{});export{r as component};

@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <link rel="stylesheet" href="/assets/styles-DLUEE3j7.css"/>
+  <title>Buy Gold Coins — VirtuEdge</title>
+  <link rel="icon" href="/favicon.png" type="image/png"/>
+  <style>
+    :root { --gold: #f59e0b; --gold-glow: rgba(245,158,11,0.35); }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #0a0a0f; color: #f1f1f1; min-height: 100vh; }
+    .container { max-width: 420px; margin: 0 auto; padding: 16px; }
+    .header { display: flex; align-items: center; gap: 12px; padding: 16px 0; border-bottom: 1px solid rgba(255,255,255,0.06); margin-bottom: 24px; }
+    .header h1 { font-size: 18px; font-weight: 900; }
+    .header .badge { margin-left: auto; display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; border: 1px solid rgba(245,158,11,0.4); background: rgba(245,158,11,0.08); color: #f59e0b; font-weight: 900; font-size: 14px; }
+    .card { border-radius: 16px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); padding: 20px; margin-bottom: 16px; }
+    .card-gold { border-color: rgba(245,158,11,0.3); box-shadow: 0 0 40px -12px var(--gold-glow); }
+    h2 { font-size: 28px; font-weight: 900; line-height: 1.1; margin: 0 0 8px; }
+    h2 span { color: #f59e0b; }
+    .subtitle { color: #9ca3af; font-size: 14px; margin: 0 0 20px; }
+    .packages { display: grid; gap: 12px; }
+    .pkg { border-radius: 14px; border: 2px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.02); padding: 16px; cursor: pointer; transition: all 0.2s; text-align: left; }
+    .pkg:hover { border-color: rgba(245,158,11,0.3); }
+    .pkg.selected { border-color: #f59e0b; background: rgba(245,158,11,0.06); box-shadow: 0 0 24px -8px var(--gold-glow); }
+    .pkg-name { font-weight: 900; font-size: 15px; }
+    .pkg-gold { color: #f59e0b; font-weight: 900; font-size: 22px; margin: 4px 0; }
+    .pkg-price { color: #9ca3af; font-size: 13px; }
+    .country-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px; }
+    .country-tab { border-radius: 12px; padding: 10px; text-align: center; font-weight: 900; font-size: 13px; border: 1px solid rgba(255,255,255,0.08); background: transparent; color: #9ca3af; cursor: pointer; transition: all 0.2s; }
+    .country-tab.active { background: #f59e0b; color: #000; border-color: #f59e0b; }
+    .payment-info { border-radius: 14px; border: 1px solid rgba(245,158,11,0.3); background: rgba(245,158,11,0.04); padding: 16px; margin-bottom: 16px; }
+    .payment-info dt { font-size: 11px; font-weight: 800; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
+    .payment-info dd { font-weight: 900; font-size: 15px; margin: 0 0 12px; display: flex; align-items: center; justify-content: space-between; }
+    .payment-info dd:last-child { margin-bottom: 0; }
+    .copy-btn { background: rgba(245,158,11,0.15); color: #f59e0b; border: none; border-radius: 8px; padding: 4px 10px; font-size: 11px; font-weight: 800; cursor: pointer; }
+    label { display: block; font-size: 11px; font-weight: 800; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+    input, select { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04); color: #f1f1f1; font-size: 14px; box-sizing: border-box; margin-bottom: 14px; }
+    input:focus, select:focus { outline: none; border-color: #f59e0b; }
+    .file-upload { border: 2px dashed rgba(255,255,255,0.12); border-radius: 14px; padding: 24px; text-align: center; cursor: pointer; transition: all 0.2s; margin-bottom: 14px; }
+    .file-upload:hover { border-color: rgba(245,158,11,0.4); }
+    .file-upload.has-file { border-color: #22c55e; background: rgba(34,197,94,0.06); }
+    .file-upload p { margin: 0; color: #9ca3af; font-size: 13px; }
+    .btn { width: 100%; padding: 14px; border-radius: 50px; border: none; font-size: 14px; font-weight: 900; cursor: pointer; transition: all 0.2s; text-transform: uppercase; letter-spacing: 0.5px; }
+    .btn-gold { background: #f59e0b; color: #000; box-shadow: 0 0 30px -8px var(--gold-glow); }
+    .btn-gold:hover { opacity: 0.9; }
+    .btn-gold:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-secondary { background: rgba(255,255,255,0.06); color: #f1f1f1; margin-top: 10px; }
+    .success { text-align: center; padding: 40px 0; }
+    .success .icon { width: 64px; height: 64px; border-radius: 50%; background: rgba(34,197,94,0.15); display: grid; place-items: center; margin: 0 auto 16px; font-size: 28px; }
+    .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid transparent; border-top-color: currentColor; border-radius: 50%; animation: spin 0.6s linear infinite; margin-right: 6px; vertical-align: middle; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .toast { position: fixed; top: 20px; right: 20px; z-index: 9999; padding: 14px 18px; border-radius: 12px; font-size: 13px; font-weight: 700; animation: slideIn 0.3s ease; max-width: 340px; }
+    .toast-success { background: #111827; border: 1px solid #22c55e; color: #f1f1f1; }
+    .toast-error { background: #111827; border: 1px solid #ef4444; color: #f1f1f1; }
+    @keyframes slideIn { from { transform: translateX(110%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    .tx-history { margin-top: 24px; }
+    .tx-item { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); background: rgba(255,255,255,0.02); margin-bottom: 8px; }
+    .tx-icon { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; font-size: 16px; flex-shrink: 0; }
+    .tx-credit { border: 1px solid rgba(34,197,94,0.3); background: rgba(34,197,94,0.08); }
+    .tx-debit { border: 1px solid rgba(239,68,68,0.3); background: rgba(239,68,68,0.08); }
+    .tx-amount { margin-left: auto; font-weight: 900; font-size: 14px; text-align: right; }
+    .tx-credit .tx-amount { color: #22c55e; }
+    .tx-debit .tx-amount { color: #ef4444; }
+    .tx-reason { font-size: 13px; font-weight: 700; }
+    .tx-date { font-size: 11px; color: #6b7280; }
+    .tx-bal { font-size: 10px; color: #6b7280; }
+  </style>
+</head>
+<body>
+  <div class="container" id="app">
+    <div class="header">
+      <a href="/dashboard" style="color:#f59e0b;text-decoration:none;font-size:20px">←</a>
+      <h1>Buy Gold Coins</h1>
+      <div class="badge" id="balance-badge">🪙 <span id="gold-balance">...</span></div>
+    </div>
+    <div id="content"></div>
+  </div>
+
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+    const SUPABASE_URL = 'https://vzduzbprnbjchssexzmp.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_Ycu1cP3Wp92UsGU0JaAnFg_ZQvXE_GY';
+    const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const PACKAGES = [
+      { id: 'starter', name: 'Starter', gold: 200, ghs: 20, ngn: 3000, tone: 'gold' },
+      { id: 'pro', name: 'Pro', gold: 500, ghs: 45, ngn: 7000, tone: 'emerald' },
+      { id: 'max', name: 'Max', gold: 1200, ghs: 90, ngn: 14000, tone: 'mint' },
+      { id: 'ultra', name: 'Ultra', gold: 3000, ghs: 200, ngn: 30000, tone: 'ice' },
+    ];
+
+    const PAYMENT = {
+      ghana: { label: 'Ghana · Mobile Money', name: 'Raphael Awuku', number: '0503949240', currency: 'GHS', symbol: 'GH₵' },
+      nigeria: { label: 'Nigeria · Bank Transfer', name: 'Raphael Awuku', number: '9134567890', currency: 'NGN', symbol: '₦' },
+    };
+
+    let state = { step: 'form', pkg: 'pro', country: 'ghana', file: null, submitting: false, transactions: [] };
+    const content = document.getElementById('content');
+
+    // Auth gate
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) { window.location.href = '/login'; throw new Error('Not logged in'); }
+
+    // Load profile + transactions
+    async function load() {
+      const { data: profile } = await sb.from('profiles').select('gold').eq('id', user.id).single();
+      document.getElementById('gold-balance').textContent = profile?.gold ?? 0;
+      const { data: txns } = await sb.from('gold_transactions').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(20);
+      state.transactions = txns || [];
+    }
+    await load();
+
+    function toast(msg, ok = true) {
+      const el = document.createElement('div');
+      el.className = `toast toast-${ok ? 'success' : 'error'}`;
+      el.textContent = msg;
+      document.body.appendChild(el);
+      setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity 0.3s'; setTimeout(() => el.remove(), 300); }, 4000);
+    }
+
+    function fmt(n) { return n.toLocaleString(); }
+    function fmtDate(d) { return new Date(d).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); }
+
+    function render() {
+      if (state.step === 'success') {
+        content.innerHTML = `
+          <div class="success">
+            <div class="icon">✅</div>
+            <h2>Proof Submitted!</h2>
+            <p class="subtitle">Our team is verifying your payment. Approval usually takes under 10 minutes.</p>
+            <a href="/dashboard" class="btn btn-gold" style="display:inline-block;text-decoration:none;margin-top:20px">Go to Dashboard</a>
+          </div>`;
+        return;
+      }
+
+      const pkg = PACKAGES.find(p => p.id === state.pkg);
+      const pay = PAYMENT[state.country];
+      const price = state.country === 'ghana' ? pkg.ghs : pkg.ngn;
+
+      content.innerHTML = `
+        <div class="card card-gold">
+          <h2>Gold <span>Packages</span></h2>
+          <p class="subtitle">🪙 Gold coins for Spin Da Bottle signals</p>
+          <div class="packages">
+            ${PACKAGES.map(p => `
+              <button class="pkg ${state.pkg === p.id ? 'selected' : ''}" data-pkg="${p.id}">
+                <div class="pkg-name">${p.name}</div>
+                <div class="pkg-gold">🪙 ${fmt(p.gold)}</div>
+                <div class="pkg-price">GH₵${fmt(p.ghs)} / ₦${fmt(p.ngn)}</div>
+              </button>`).join('')}
+          </div>
+        </div>
+
+        <div class="country-tabs">
+          <button class="country-tab ${state.country === 'ghana' ? 'active' : ''}" data-country="ghana">🇬🇭 Ghana</button>
+          <button class="country-tab ${state.country === 'nigeria' ? 'active' : ''}" data-country="nigeria">🇳🇬 Nigeria</button>
+        </div>
+
+        <div class="payment-info">
+          <dl>
+            <dt>Send to</dt>
+            <dd>${pay.name} <button class="copy-btn" data-copy="${pay.name}">Copy</button></dd>
+            <dt>${state.country === 'ghana' ? 'Mobile Money Number' : 'Account Number'}</dt>
+            <dd>${pay.number} <button class="copy-btn" data-copy="${pay.number}">Copy</button></dd>
+            <dt>Amount</dt>
+            <dd style="color:#f59e0b;font-size:18px">${pay.symbol}${fmt(price)}</dd>
+          </dl>
+        </div>
+
+        <div class="card">
+          <div style="margin-bottom:14px">
+            <label>Sender Name</label>
+            <input id="sender-name" placeholder="Name on your account" maxlength="100"/>
+          </div>
+          <div style="margin-bottom:14px">
+            <label>Sender Number</label>
+            <input id="sender-number" placeholder="${state.country === 'ghana' ? 'e.g. 0241234567' : 'e.g. 08012345678'}" maxlength="20"/>
+          </div>
+          <div style="margin-bottom:14px">
+            <label>Transaction ID (optional)</label>
+            <input id="txn-id" placeholder="Reference / Transaction ID" maxlength="40"/>
+          </div>
+          <label>Screenshot Proof</label>
+          <div class="file-upload ${state.file ? 'has-file' : ''}" id="file-drop">
+            <p>${state.file ? '📎 ' + state.file.name : '📸 Tap to upload payment screenshot'}</p>
+          </div>
+          <input type="file" id="file-input" accept="image/*" style="display:none"/>
+        </div>
+
+        <button class="btn btn-gold" id="submit-btn" ${state.submitting ? 'disabled' : ''}>
+          ${state.submitting ? '<span class="spinner"></span>Submitting…' : 'Submit Proof — ' + pay.symbol + fmt(price)}
+        </button>
+
+        ${state.transactions.length > 0 ? `
+          <div class="tx-history">
+            <h3 style="font-size:16px;font-weight:900;margin:24px 0 12px">Gold Transactions (${state.transactions.length})</h3>
+            ${state.transactions.map(tx => `
+              <div class="tx-item">
+                <div class="tx-icon ${tx.kind === 'credit' ? 'tx-credit' : 'tx-debit'}">${tx.kind === 'credit' ? '🪙' : '🔻'}</div>
+                <div>
+                  <div class="tx-reason">${tx.reason}</div>
+                  <div class="tx-date">${fmtDate(tx.created_at)}</div>
+                  <div class="tx-bal">bal ${fmt(tx.balance_after)} 🪙</div>
+                </div>
+                <div class="tx-amount">${tx.kind === 'credit' ? '+' : '-'}${fmt(tx.amount)} 🪙</div>
+              </div>`).join('')}
+          </div>` : ''}`;
+
+      // Event listeners
+      content.querySelectorAll('.pkg').forEach(el => {
+        el.onclick = () => { state.pkg = el.dataset.pkg; render(); };
+      });
+      content.querySelectorAll('.country-tab').forEach(el => {
+        el.onclick = () => { state.country = el.dataset.country; render(); };
+      });
+      content.querySelectorAll('.copy-btn').forEach(el => {
+        el.onclick = async () => {
+          await navigator.clipboard.writeText(el.dataset.copy);
+          toast('Copied!');
+        };
+      });
+      document.getElementById('file-drop').onclick = () => document.getElementById('file-input').click();
+      document.getElementById('file-input').onchange = (e) => {
+        state.file = e.target.files[0] || null;
+        render();
+      };
+      document.getElementById('submit-btn').onclick = handleSubmit;
+    }
+
+    async function handleSubmit() {
+      const senderName = document.getElementById('sender-name')?.value?.trim();
+      const senderNumber = document.getElementById('sender-number')?.value?.trim();
+      const txnId = document.getElementById('txn-id')?.value?.trim();
+
+      if (!senderName || senderName.length < 2) { toast('Enter your name', false); return; }
+      if (!senderNumber || senderNumber.length < 9) { toast('Enter a valid number', false); return; }
+      if (!state.file) { toast('Upload a screenshot', false); return; }
+
+      state.submitting = true;
+      render();
+
+      try {
+        // Upload screenshot
+        const ext = state.file.name.split('.').pop() || 'jpg';
+        const path = `gold/${user.id}/${Date.now()}.${ext}`;
+        const { error: uploadErr } = await sb.storage.from('screenshot-proofs').upload(path, state.file);
+        if (uploadErr) throw uploadErr;
+
+        const pkg = PACKAGES.find(p => p.id === state.pkg);
+        const pay = PAYMENT[state.country];
+        const price = state.country === 'ghana' ? pkg.ghs : pkg.ngn;
+
+        // Submit order via RPC
+        const { data, error } = await sb.rpc('submit_gold_order', {
+          p_package_name: pkg.name + ' Gold',
+          p_gold: pkg.gold,
+          p_amount: price,
+          p_currency: pay.currency,
+          p_method: pay.label,
+          p_txn_id: txnId || null,
+          p_sender_name: senderName,
+          p_sender_number: senderNumber,
+          p_screenshot_path: path,
+        });
+
+        if (error) throw error;
+        if (!data?.ok) throw new Error(data?.reason || 'Submission failed');
+
+        state.step = 'success';
+        render();
+        toast('✅ Proof submitted successfully!');
+      } catch (err) {
+        console.error(err);
+        toast(err.message || 'Something went wrong', false);
+        state.submitting = false;
+        render();
+      }
+    }
+
+    render();
+  </script>
+</body>
+</html>
