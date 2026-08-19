@@ -1,5 +1,5 @@
 /**
- * VirtuEdge — Admin Console Real-Time Sync (v2)
+ * prediit — Admin Console Real-Time Sync (v2)
  * ──────────────────────────────────────────────
  * Injects Supabase Realtime subscriptions into the admin page.
  * Listens for new payments, orders, profile changes, gold transactions,
@@ -151,7 +151,7 @@
       Notification.requestPermission();
 
     addLiveBadge();
-    console.log("%c[VirtuEdge] ⚡ Admin real-time sync active", "color:#00ff88;font-weight:bold");
+    console.log("%c[prediit] ⚡ Admin real-time sync active", "color:#00ff88;font-weight:bold");
 
     /* ── New payment proofs (registrations) ────────────── */
     sb.channel("admin-payments")

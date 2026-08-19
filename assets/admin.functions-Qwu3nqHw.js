@@ -460,10 +460,10 @@ export function t(props) {
 export function u_comp(props) {
   const { data, invalidate } = props;
   const [ghanaProvider, setGhanaProvider] = React.useState(data?.payment_ghana?.provider ?? 'Telecel');
-  const [ghanaName, setGhanaName] = React.useState(data?.payment_ghana?.accountName ?? 'VirtuEdge');
+  const [ghanaName, setGhanaName] = React.useState(data?.payment_ghana?.accountName ?? 'prediit');
   const [ghanaNumber, setGhanaNumber] = React.useState(data?.payment_ghana?.accountNumber ?? '0501234567');
   const [nigeriaProvider, setNigeriaProvider] = React.useState(data?.payment_nigeria?.provider ?? 'Access Bank');
-  const [nigeriaName, setNigeriaName] = React.useState(data?.payment_nigeria?.accountName ?? 'VirtuEdge Ltd');
+  const [nigeriaName, setNigeriaName] = React.useState(data?.payment_nigeria?.accountName ?? 'prediit Ltd');
   const [nigeriaNumber, setNigeriaNumber] = React.useState(data?.payment_nigeria?.accountNumber ?? '0123456789');
   const [loading, setLoading] = React.useState(false);
 

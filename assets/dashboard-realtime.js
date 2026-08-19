@@ -1,5 +1,5 @@
 /**
- * VirtuEdge — Dashboard Real-Time Sync (v3)
+ * prediit — Dashboard Real-Time Sync (v3)
  * ────────────────────────────────────────────
  * Replaces 30-second polling with Supabase Realtime subscriptions.
  *
@@ -233,7 +233,7 @@
       qc.invalidateQueries();
       return true;
     } catch (e) {
-      console.warn("[VirtuEdge] invalidateQueries failed:", e);
+      console.warn("[prediit] invalidateQueries failed:", e);
       return false;
     }
   }
@@ -251,7 +251,7 @@
       }
       return true;
     } catch (e) {
-      console.warn("[VirtuEdge] invalidateQueries failed:", e);
+      console.warn("[prediit] invalidateQueries failed:", e);
       return false;
     }
   }
@@ -295,14 +295,14 @@
             });
 
             console.log(
-              `%c[VirtuEdge] ⏸ Disabled 30s polling on query: ${JSON.stringify(query.queryKey)}`,
+              `%c[prediit] ⏸ Disabled 30s polling on query: ${JSON.stringify(query.queryKey)}`,
               "color:#fbbf24;font-weight:bold"
             );
           }
         }
       }
     } catch (e) {
-      console.warn("[VirtuEdge] disablePolling failed:", e);
+      console.warn("[prediit] disablePolling failed:", e);
     }
   }
 
@@ -324,7 +324,7 @@
         refetchInterval: originalInterval,
       });
       console.log(
-        `%c[VirtuEdge] ▶ Restored ${originalInterval / 1000}s polling on: ${JSON.stringify(queryKey)}`,
+        `%c[prediit] ▶ Restored ${originalInterval / 1000}s polling on: ${JSON.stringify(queryKey)}`,
         "color:#22c55e;font-weight:bold"
       );
     }
@@ -358,14 +358,14 @@
     } = await sb.auth.getUser();
     if (!user) {
       console.log(
-        "%c[VirtuEdge] ⏸ No active session — real-time sync skipped",
+        "%c[prediit] ⏸ No active session — real-time sync skipped",
         "color:#888"
       );
       return;
     }
 
     console.log(
-      `%c[VirtuEdge] ⚡ Real-time sync active for ${user.email}`,
+      `%c[prediit] ⚡ Real-time sync active for ${user.email}`,
       "color:#00ff88;font-weight:bold"
     );
 
@@ -373,12 +373,12 @@
     setTimeout(() => {
       if (disablePolling()) {
         console.log(
-          "%c[VirtuEdge] ✅ 30s polling disabled — realtime replaces it",
+          "%c[prediit] ✅ 30s polling disabled — realtime replaces it",
           "color:#00ff88;font-weight:bold"
         );
       } else {
         console.log(
-          "%c[VirtuEdge] ⏳ Polling will be disabled once React mounts",
+          "%c[prediit] ⏳ Polling will be disabled once React mounts",
           "color:#fbbf24"
         );
         // Retry every 2s for up to 10s
@@ -462,7 +462,7 @@
 
           ping();
           browserNotify(
-            "VirtuEdge Update",
+            "prediit Update",
             "Your account data has been updated."
           );
           invalidateAll();

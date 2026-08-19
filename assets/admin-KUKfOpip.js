@@ -671,10 +671,10 @@ function EfootballPanel(props) {
 function PaysettingsPanel(props) {
   const { data, invalidate } = props;
   const [ghanaProvider, setGhanaProvider] = I.useState(data?.payment_ghana?.provider ?? 'Telecel');
-  const [ghanaName, setGhanaName] = I.useState(data?.payment_ghana?.accountName ?? 'VirtuEdge');
+  const [ghanaName, setGhanaName] = I.useState(data?.payment_ghana?.accountName ?? 'prediit');
   const [ghanaNumber, setGhanaNumber] = I.useState(data?.payment_ghana?.accountNumber ?? '0501234567');
   const [nigeriaProvider, setNigeriaProvider] = I.useState(data?.payment_nigeria?.provider ?? 'Access Bank');
-  const [nigeriaName, setNigeriaName] = I.useState(data?.payment_nigeria?.accountName ?? 'VirtuEdge Ltd');
+  const [nigeriaName, setNigeriaName] = I.useState(data?.payment_nigeria?.accountName ?? 'prediit Ltd');
   const [nigeriaNumber, setNigeriaNumber] = I.useState(data?.payment_nigeria?.accountNumber ?? '0123456789');
   const [loading, setLoading] = I.useState(false);
 
