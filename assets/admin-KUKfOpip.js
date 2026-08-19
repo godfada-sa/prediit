@@ -1201,7 +1201,8 @@ function PricingPanel(props) {
   I.useEffect(() => {
     (async () => {
       try {
-        const { data: secrets } = await supabaseClient.rpc('get_app_secrets');
+        const adminPasscode = sessionStorage.getItem('admin_unlocked') || '';
+        const { data: secrets } = await supabaseClient.rpc('get_app_secrets', { p_passcode: adminPasscode });
         if (secrets?.gemini_api_key) setGeminiApiKey(secrets.gemini_api_key);
       } catch (e) { /* ignore - key is optional */ }
     })();
@@ -1226,7 +1227,8 @@ function PricingPanel(props) {
 
       // 2. Save API key via separate admin-only RPC (goes to app_secrets, not settings)
       if (geminiApiKey.trim()) {
-        const { error: secretErr } = await supabaseClient.rpc('update_app_secrets', { p_gemini_api_key: geminiApiKey.trim() });
+        const adminPasscode = sessionStorage.getItem('admin_unlocked') || '';
+        const { error: secretErr } = await supabaseClient.rpc('update_app_secrets', { p_gemini_api_key: geminiApiKey.trim(), p_passcode: adminPasscode });
         if (secretErr) throw secretErr;
       }
 
