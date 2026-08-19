@@ -112,12 +112,8 @@ export async function n(props) {
 
   // Try Gemini Vision if screenshot + API key available
   try {
-    const { data: settings } = await supabase
-      .from('settings').select('id').eq('id', 'global_config').maybeSingle();
-    const { data: secrets } = await supabase.rpc('get_app_secrets').maybeSingle?.() ?? { data: null };
-    // Fallback: try direct settings read for gemini key
-    let geminiKey = null;
-    if (secrets?.gemini_api_key) geminiKey = secrets.gemini_api_key;
+    const { data: keyData } = await supabase.rpc('get_gemini_key').maybeSingle();
+    let geminiKey = keyData?.gemini_api_key || null;
 
     if (geminiKey && fileBase64) {
       matches = await callGeminiVision(fileBase64, mime || 'image/jpeg', geminiKey);
