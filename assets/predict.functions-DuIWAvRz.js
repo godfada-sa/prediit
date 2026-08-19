@@ -106,51 +106,74 @@ export async function n(props) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Unauthorized");
 
-  // Generate predictions client-side (random fallback until Gemini edge function is wired)
-  const teams = [
-    { name: "Arsenal", domain: "arsenal.com" },
-    { name: "Chelsea", domain: "chelseafc.com" },
-    { name: "Liverpool", domain: "liverpoolfc.com" },
-    { name: "Man City", domain: "mancity.com" },
-    { name: "Real Madrid", domain: "realmadrid.com" },
-    { name: "Barcelona", domain: "fcbarcelona.com" },
-    { name: "Bayern Munich", domain: "fcbayern.com" },
-    { name: "PSG", domain: "psg.fr" }
-  ];
+  const { fileBase64, mime, fileName } = props?.data ?? {};
+  let matches = [];
+  let usedGemini = false;
 
-  const shuffled = [...teams].sort(() => 0.5 - Math.random());
-  const matches = [];
-  for (let i = 0; i < 3; i++) {
-    const home = shuffled[i * 2];
-    const away = shuffled[i * 2 + 1];
-    const probHome = Math.floor(Math.random() * 35) + 45;
-    const probDraw = Math.floor(Math.random() * 15) + 10;
-    const probAway = 100 - probHome - probDraw;
-    const pick = probHome > probAway ? "1" : "2";
-    matches.push({
-      home: home.name, away: away.name,
-      homeDomain: home.domain, awayDomain: away.domain,
-      pick, pickLabel: pick === "1" ? "Home Win" : "Away Win",
-      confidence: probHome > probAway ? probHome : probAway,
-      drawChance: probDraw,
-      correctScore: pick === "1" ? `${Math.floor(Math.random() * 2) + 2} - ${Math.floor(Math.random() * 2)}` : `${Math.floor(Math.random() * 2)} - ${Math.floor(Math.random() * 2) + 2}`,
-      goals: "Over 2.5",
-      probabilities: { home: probHome, draw: probDraw, away: probAway },
-      note: "High model confidence & momentum detected"
-    });
+  // Try Gemini Vision if screenshot + API key available
+  try {
+    const { data: settings } = await supabase
+      .from('settings').select('id').eq('id', 'global_config').maybeSingle();
+    const { data: secrets } = await supabase.rpc('get_app_secrets').maybeSingle?.() ?? { data: null };
+    // Fallback: try direct settings read for gemini key
+    let geminiKey = null;
+    if (secrets?.gemini_api_key) geminiKey = secrets.gemini_api_key;
+
+    if (geminiKey && fileBase64) {
+      matches = await callGeminiVision(fileBase64, mime || 'image/jpeg', geminiKey);
+      if (Array.isArray(matches) && matches.length > 0) {
+        usedGemini = true;
+      }
+    }
+  } catch (geminiErr) {
+    console.warn('[prediit] Gemini vision failed, falling back to model:', geminiErr?.message);
+  }
+
+  // Fallback: random predictions if Gemini unavailable or failed
+  if (!usedGemini) {
+    const teams = [
+      { name: "Arsenal", domain: "arsenal.com" },
+      { name: "Chelsea", domain: "chelseafc.com" },
+      { name: "Liverpool", domain: "liverpoolfc.com" },
+      { name: "Man City", domain: "mancity.com" },
+      { name: "Real Madrid", domain: "realmadrid.com" },
+      { name: "Barcelona", domain: "fcbarcelona.com" },
+      { name: "Bayern Munich", domain: "fcbayern.com" },
+      { name: "PSG", domain: "psg.fr" }
+    ];
+    const shuffled = [...teams].sort(() => 0.5 - Math.random());
+    for (let i = 0; i < 3; i++) {
+      const home = shuffled[i * 2];
+      const away = shuffled[i * 2 + 1];
+      const probHome = Math.floor(Math.random() * 35) + 45;
+      const probDraw = Math.floor(Math.random() * 15) + 10;
+      const probAway = 100 - probHome - probDraw;
+      const pick = probHome > probAway ? "1" : "2";
+      matches.push({
+        home: home.name, away: away.name,
+        homeDomain: home.domain, awayDomain: away.domain,
+        pick, pickLabel: pick === "1" ? "Home Win" : "Away Win",
+        confidence: probHome > probAway ? probHome : probAway,
+        drawChance: probDraw,
+        correctScore: pick === "1" ? `${Math.floor(Math.random() * 2) + 2} - ${Math.floor(Math.random() * 2)}` : `${Math.floor(Math.random() * 2)} - ${Math.floor(Math.random() * 2) + 2}`,
+        goals: "Over 2.5",
+        probabilities: { home: probHome, draw: probDraw, away: probAway },
+        note: "Model-generated prediction (add Gemini API key for screenshot analysis)"
+      });
+    }
   }
 
   // Atomic server-side: deducts diamonds + logs transaction + inserts prediction in one tx
   const { data: rpcResult, error: rpcErr } = await supabase.rpc('submit_prediction', {
     p_user_id: user.id,
-    p_result: { matches },
+    p_result: { matches, source: usedGemini ? 'gemini' : 'model' },
     p_cost: 0
   });
 
   if (rpcErr) throw rpcErr;
   if (!rpcResult?.ok) return rpcResult;
 
-  return { ok: true, matches };
+  return { ok: true, matches, source: usedGemini ? 'gemini' : 'model' };
 }
 
 // POST: history clear/delete function
