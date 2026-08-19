@@ -23,16 +23,63 @@ export async function t() {
     .eq('user_id', user.id)
     .order('created_at', { ascending: false });
 
+  // Diamond packages (hardcoded tiers)
+  const packages = [
+    {
+      id: 'starter',
+      name: 'Starter',
+      diamonds: 5,
+      ghs: 50,
+      ngn: 5000,
+      features: ['3 match predictions', 'Standard accuracy', 'Email support'],
+      example: 'Man City vs Liverpool → Home Win 2-1 (82%)',
+      popular: false,
+      tone: 'emerald'
+    },
+    {
+      id: 'pro',
+      name: 'Pro',
+      diamonds: 15,
+      ghs: 120,
+      ngn: 12000,
+      features: ['10 match predictions', 'Gemini AI analysis', 'Priority processing', 'Score + goals tips'],
+      example: 'Arsenal vs Chelsea → Home Win 3-1 (89%) + Over 2.5 goals',
+      popular: true,
+      tone: 'gold'
+    },
+    {
+      id: 'elite',
+      name: 'Elite',
+      diamonds: 30,
+      ghs: 200,
+      ngn: 20000,
+      features: ['Unlimited predictions', 'Gemini AI + screenshot OCR', 'Instant processing', 'Full analysis + notes', 'VIP support'],
+      example: 'Real Madrid vs Barcelona → Draw 2-2 (94%) + BTTS Yes',
+      popular: false,
+      tone: 'ice'
+    }
+  ];
+
+  // User's diamond orders
+  const { data: orders } = await supabase
+    .from('orders')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false });
+
   return {
     diamonds: profile?.diamonds ?? 0,
     cost: settings?.prediction_cost ?? 50,
+    packages,
+    orders: orders || [],
     profile: {
       id: profile.id,
       fullName: profile.full_name,
       email: profile.email,
       phone: profile.phone,
       referralCode: profile.referral_code,
-      status: profile.status
+      status: profile.status,
+      country: profile.country || null
     },
     predictions: predictions || []
   };
@@ -141,18 +188,29 @@ export async function n(props) {
     for (let i = 0; i < 3; i++) {
       const home = shuffled[i * 2];
       const away = shuffled[i * 2 + 1];
-      const probHome = Math.floor(Math.random() * 35) + 45;
-      const probDraw = Math.floor(Math.random() * 15) + 10;
+      // Generate realistic varied probabilities
+      const probHome = Math.floor(Math.random() * 50) + 20;
+      const probDraw = Math.floor(Math.random() * 20) + 10;
       const probAway = 100 - probHome - probDraw;
-      const pick = probHome > probAway ? "1" : "2";
+      // Pick based on actual probabilities (not always home)
+      const roll = Math.random() * 100;
+      let pick, pickLabel;
+      if (roll < probHome) { pick = "1"; pickLabel = "Home Win"; }
+      else if (roll < probHome + probDraw) { pick = "X"; pickLabel = "Draw"; }
+      else { pick = "2"; pickLabel = "Away Win"; }
+      // Correct score based on pick
+      let correctScore;
+      if (pick === "1") correctScore = `${Math.floor(Math.random() * 3) + 1} - ${Math.floor(Math.random() * 2)}`;
+      else if (pick === "X") correctScore = `${Math.floor(Math.random() * 2) + 1} - ${Math.floor(Math.random() * 2) + 1}`;
+      else correctScore = `${Math.floor(Math.random() * 2)} - ${Math.floor(Math.random() * 3) + 1}`;
       matches.push({
         home: home.name, away: away.name,
         homeDomain: home.domain, awayDomain: away.domain,
-        pick, pickLabel: pick === "1" ? "Home Win" : "Away Win",
-        confidence: probHome > probAway ? probHome : probAway,
+        pick, pickLabel,
+        confidence: Math.max(probHome, probDraw, probAway),
         drawChance: probDraw,
-        correctScore: pick === "1" ? `${Math.floor(Math.random() * 2) + 2} - ${Math.floor(Math.random() * 2)}` : `${Math.floor(Math.random() * 2)} - ${Math.floor(Math.random() * 2) + 2}`,
-        goals: "Over 2.5",
+        correctScore,
+        goals: Math.random() > 0.5 ? "Over 2.5" : "Under 2.5",
         probabilities: { home: probHome, draw: probDraw, away: probAway },
         note: "Model-generated prediction (add Gemini API key for screenshot analysis)"
       });
