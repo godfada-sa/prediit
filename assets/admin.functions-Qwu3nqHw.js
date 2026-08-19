@@ -150,20 +150,11 @@ export async function i() {
 // POST: get-payment-proof-url
 export async function l(props) {
   const { paymentId } = props?.data ?? {};
-  const { data: payment } = await supabase
-    .from('payments')
-    .select('screenshot_path')
-    .eq('id', paymentId)
-    .single();
-
-  if (!payment) return { url: null };
-
-  const { data, error } = await supabase.storage
-    .from('payment-proofs')
-    .createSignedUrl(payment.screenshot_path, 3600);
-
+  const { data, error } = await supabase.rpc('admin_get_payment_proof_url', {
+    p_payment_id: paymentId
+  });
   if (error) throw error;
-  return { url: data.signedUrl };
+  return { url: data?.url || null };
 }
 
 // POST: update-member-status
@@ -181,20 +172,11 @@ export async function m(props) {
 // POST: get-order-proof-url
 export async function n(props) {
   const { orderId } = props?.data ?? {};
-  const { data: order } = await supabase
-    .from('orders')
-    .select('screenshot_path')
-    .eq('id', orderId)
-    .single();
-
-  if (!order) return { url: null };
-
-  const { data, error } = await supabase.storage
-    .from('screenshot-proofs')
-    .createSignedUrl(order.screenshot_path, 3600);
-
+  const { data, error } = await supabase.rpc('admin_get_order_proof_url', {
+    p_order_id: orderId
+  });
   if (error) throw error;
-  return { url: data.signedUrl };
+  return { url: data?.url || null };
 }
 
 // POST: submit payment proof / order proof (imported as h in checkout)
