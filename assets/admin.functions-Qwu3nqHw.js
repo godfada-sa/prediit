@@ -168,12 +168,13 @@ export async function l(props) {
 
 // POST: update-member-status
 export async function m(props) {
-  const { userId, status } = props?.data ?? {};
-  const { error } = await supabase
-    .from('profiles')
-    .update({ status })
-    .eq('id', userId);
-
+  // Props come directly from mutate({ userId, status }), not wrapped in data
+  const { userId, status } = props?.data ?? props ?? {};
+  if (!userId || !status) throw new Error('Missing userId or status');
+  const { data, error } = await supabase.rpc('admin_update_member_status', {
+    p_user_id: userId,
+    p_status: status
+  });
   if (error) throw error;
   return { ok: true };
 }
