@@ -1,0 +1,275 @@
+/* PREDIIT — red / white / black visual system
+   This file intentionally sits after the generated stylesheet so the deployed
+   application can be themed without hand-editing the generated utility bundle. */
+
+:root,
+.dark {
+  color-scheme: dark;
+  --radius: 1.1rem;
+  --background: oklch(8% 0.008 25);
+  --foreground: oklch(98% 0.003 25);
+  --card: oklch(13% 0.012 25);
+  --card-foreground: oklch(98% 0.003 25);
+  --popover: oklch(12% 0.012 25);
+  --popover-foreground: oklch(98% 0.003 25);
+  --primary: oklch(52% 0.19 25);
+  --primary-foreground: oklch(100% 0 0);
+  --secondary: oklch(19% 0.014 25);
+  --secondary-foreground: oklch(97% 0.004 25);
+  --muted: oklch(18% 0.012 25);
+  --muted-foreground: oklch(70% 0.01 25);
+  --accent: oklch(96% 0.004 25);
+  --accent-foreground: oklch(10% 0.01 25);
+  --destructive: oklch(58% 0.24 25);
+  --destructive-foreground: oklch(100% 0 0);
+  --border: oklch(28% 0.018 25 / 0.82);
+  --input: oklch(25% 0.018 25);
+  --ring: oklch(55% 0.18 25);
+  --ash: oklch(15% 0.012 25);
+  --ash-foreground: oklch(86% 0.006 25);
+  --primary-glow: oklch(36% 0.11 25);
+  --tier-mint: oklch(92% 0.02 25);
+  --tier-emerald: oklch(56% 0.17 25);
+  --tier-gold: oklch(96% 0.004 25);
+  --tier-ice: oklch(82% 0.03 25);
+  --game-red: oklch(55% 0.19 25);
+  --game-red-glow: oklch(34% 0.1 25);
+  --game-orange: oklch(58% 0.18 27);
+  --game-orange-glow: oklch(35% 0.09 27);
+  --gradient-game-green: linear-gradient(155deg, oklch(17% 0.025 25), oklch(9% 0.009 25) 78%);
+  --gradient-game-red: linear-gradient(155deg, oklch(18% 0.035 25), oklch(9% 0.009 25) 78%);
+  --gradient-game-orange: linear-gradient(155deg, oklch(17% 0.028 27), oklch(9% 0.009 25) 78%);
+  --gradient-hero:
+    radial-gradient(75% 75% at 8% 0%, oklch(44% 0.15 25 / 0.1), transparent 60%),
+    radial-gradient(60% 50% at 92% 18%, oklch(34% 0.1 25 / 0.055), transparent 64%);
+  --gradient-primary: linear-gradient(135deg, oklch(45% 0.18 25), oklch(57% 0.19 25));
+  --gradient-ash: linear-gradient(160deg, oklch(14% 0.015 25), oklch(8% 0.008 25));
+  --shadow-glow: 0 0 0 1px oklch(55% 0.18 25 / 0.22), 0 12px 26px -18px oklch(40% 0.14 25 / 0.35);
+  --shadow-glow-lg: 0 18px 50px -34px oklch(42% 0.14 25 / 0.34);
+  --shadow-card: 0 18px 42px -30px rgb(0 0 0 / 0.96);
+  --chart-1: oklch(52% 0.19 25);
+  --chart-2: oklch(96% 0.004 25);
+  --chart-3: oklch(72% 0.01 25);
+  --chart-4: oklch(48% 0.19 25);
+  --chart-5: oklch(34% 0.08 25);
+  --sidebar: oklch(10% 0.01 25);
+  --sidebar-foreground: oklch(98% 0.003 25);
+  --sidebar-primary: oklch(52% 0.19 25);
+  --sidebar-primary-foreground: oklch(100% 0 0);
+  --sidebar-accent: oklch(18% 0.012 25);
+  --sidebar-accent-foreground: oklch(98% 0.003 25);
+  --sidebar-border: oklch(28% 0.018 25);
+  --sidebar-ring: oklch(55% 0.18 25);
+  --gold: #b51f2e;
+  --gold-glow: rgb(181 31 46 / 0.18);
+}
+
+html {
+  background: #070708;
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  background:
+    linear-gradient(rgb(255 255 255 / 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 0.018) 1px, transparent 1px),
+    var(--background);
+  background-size: 48px 48px, 48px 48px, auto;
+  letter-spacing: -0.008em;
+}
+
+::selection {
+  color: white;
+  background: oklch(48% 0.18 25 / 0.88);
+}
+
+:focus-visible {
+  outline: 2px solid var(--primary) !important;
+  outline-offset: 3px;
+}
+
+.bg-card,
+.surface-ash,
+[class*="bg-ash/"] {
+  box-shadow: inset 0 1px rgb(255 255 255 / 0.035), var(--shadow-card);
+}
+
+.surface-ash,
+.rounded-2xl.border,
+.rounded-3xl.border {
+  border-color: oklch(31% 0.025 25 / 0.78) !important;
+}
+
+.surface-ash {
+  background:
+    linear-gradient(145deg, rgb(255 255 255 / 0.045), transparent 46%),
+    oklch(13% 0.014 25 / 0.92) !important;
+}
+
+.glow-text {
+  text-shadow: 0 1px 10px oklch(42% 0.14 25 / 0.22) !important;
+}
+
+.glow-ring {
+  box-shadow: 0 0 0 1px oklch(58% 0.16 25 / 0.2), 0 10px 24px -18px rgb(0 0 0 / 0.95) !important;
+}
+
+.pulse-glow {
+  animation: none !important;
+  box-shadow: 0 0 0 1px oklch(58% 0.16 25 / 0.18), 0 10px 24px -18px rgb(0 0 0 / 0.95) !important;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+}
+
+button:not(:disabled):active,
+a[class*="bg-primary"]:active {
+  transform: translateY(1px) scale(0.99);
+}
+
+input,
+select,
+textarea {
+  background-color: oklch(11% 0.012 25) !important;
+  border-color: oklch(30% 0.025 25) !important;
+}
+
+input:hover,
+select:hover,
+textarea:hover {
+  border-color: oklch(42% 0.08 25) !important;
+}
+
+/* The standalone gold checkout predates the shared component bundle. Bring
+   its remaining semantic gold/green accents into the same red/white system. */
+.header .badge,
+h2 span,
+.pkg-gold,
+.copy-btn,
+[style*="#f59e0b"] {
+  color: var(--primary) !important;
+}
+
+.pkg.selected,
+.file-upload.has-file {
+  border-color: var(--primary) !important;
+  background: oklch(58% 0.27 25 / 0.08) !important;
+}
+
+.country-tab.active,
+.btn-gold {
+  color: white !important;
+  background: var(--primary) !important;
+  border-color: var(--primary) !important;
+}
+
+.toast-success,
+.toast-error {
+  border-color: var(--primary) !important;
+  background: #0b0b0d !important;
+}
+
+.tx-credit .tx-amount {
+  color: white !important;
+}
+
+img[src*="hero-phone"] {
+  filter: hue-rotate(240deg) saturate(1.2) contrast(1.06);
+  box-shadow: 0 28px 58px -40px oklch(42% 0.14 25 / 0.38);
+}
+
+header.sticky {
+  background: oklch(8% 0.01 25 / 0.88) !important;
+  border-bottom-color: oklch(32% 0.04 25 / 0.68) !important;
+}
+
+/* Classic card treatment: keep crimson as an accent, not a light source. */
+main article.rounded-3xl {
+  border-color: oklch(32% 0.045 25 / 0.88) !important;
+  box-shadow: inset 0 1px rgb(255 255 255 / 0.035), 0 18px 40px -30px rgb(0 0 0 / 0.98) !important;
+}
+
+main article.rounded-3xl > span[aria-hidden="true"] {
+  opacity: 0.14;
+}
+
+main article.rounded-3xl img[class*="drop-shadow"] {
+  filter: saturate(0.9) contrast(1.04) drop-shadow(0 8px 12px rgb(0 0 0 / 0.58)) !important;
+}
+
+[class*="shadow-[0_0_34px"] {
+  box-shadow: 0 9px 20px -16px rgb(0 0 0 / 0.96) !important;
+}
+
+/* Full-screen proof viewer: anchor to the viewport instead of centering a
+   content-sized dialog, which can push tall screenshots below mobile screens. */
+.proof-viewer {
+  position: fixed !important;
+  top: max(0.625rem, env(safe-area-inset-top)) !important;
+  right: auto !important;
+  bottom: max(0.625rem, env(safe-area-inset-bottom)) !important;
+  left: 50% !important;
+  translate: none !important;
+  transform: translateX(-50%) !important;
+  width: min(calc(100vw - 1.25rem), 42rem) !important;
+  height: auto !important;
+  max-height: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0 !important;
+}
+
+.proof-viewer__header {
+  flex: 0 0 auto;
+}
+
+.proof-viewer__body {
+  min-height: 0;
+  flex: 1 1 auto;
+  align-items: center;
+  overflow: hidden;
+  padding: 1rem !important;
+}
+
+.proof-viewer__image {
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  margin: auto;
+  object-fit: contain;
+}
+
+@media (max-width: 40rem) {
+  .proof-viewer {
+    border-radius: 1.25rem !important;
+  }
+
+  .proof-viewer__header {
+    padding: 1rem !important;
+    padding-right: 4.5rem !important;
+  }
+}
+
+@media (hover: hover) {
+  .surface-ash:hover,
+  .rounded-2xl.border:hover {
+    border-color: oklch(44% 0.09 25 / 0.72) !important;
+    transform: translateY(-1px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

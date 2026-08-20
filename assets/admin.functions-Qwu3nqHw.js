@@ -5,24 +5,38 @@ import { G as reactRaw, o as jsxRaw, q as interop } from "./useStore-BI3_Wmfo.js
 const React = interop(reactRaw(), 1);
 const j = jsxRaw();
 
+function getAdminSession() {
+  try {
+    const session = JSON.parse(sessionStorage.getItem('admin_verified') || 'null');
+    if (session?.token && Number(session.expiresAt) > Date.now()) return session;
+  } catch (_) { /* ignore malformed browser state */ }
+  sessionStorage.removeItem('admin_verified');
+  return null;
+}
+
+async function adminRpc(name, args = {}) {
+  const session = getAdminSession();
+  if (!session) throw new Error('Admin session expired. Enter the access code again.');
+  const { data, error } = await supabase.rpc(name, { ...args, p_admin_token: session.token });
+  if (error) {
+    if (/session|expired|invalid|required/i.test(error.message || '')) {
+      sessionStorage.removeItem('admin_verified');
+    }
+    throw error;
+  }
+  return data;
+}
+
 // Check icon component required by the admin page
 export var _ = makeIcon('check', [['path', { d: 'M20 6 9 17l-5-5', key: '1gmf2c' }]]);
 
 // GET: admin-session (server-side + session-based passcode auth)
 export async function a() {
-  const { data, error } = await supabase.rpc('check_admin_session');
+  const session = getAdminSession();
+  if (!session) return { unlocked: false };
+  const { data, error } = await supabase.rpc('check_admin_session', { p_admin_token: session.token });
   if (!error && data?.unlocked) return { unlocked: true };
-
-  // Check session-based passcode verification (admin panel's own auth)
-  try {
-    const session = JSON.parse(sessionStorage.getItem('admin_verified') || 'null');
-    if (session?.verified && session?.ts) {
-      const elapsed = Date.now() - session.ts;
-      if (elapsed < 30 * 60 * 1000) return { unlocked: true };
-      sessionStorage.removeItem('admin_verified');
-    }
-  } catch (_) { /* ignore */ }
-
+  sessionStorage.removeItem('admin_verified');
   return { unlocked: false };
 }
 
@@ -31,13 +45,11 @@ export async function d(props) {
   const { orderId, status, note } = props?.data ?? {};
   if (!orderId || !status) throw new Error("Missing parameters");
 
-  const { data, error } = await supabase.rpc('update_diamond_order', {
+  return adminRpc('update_diamond_order', {
     p_order_id: orderId,
     p_status: status,
     p_note: note
   });
-  if (error) throw error;
-  return data;
 }
 
 // POST: update-payment-proof (RPC call)
@@ -45,23 +57,24 @@ export async function f(props) {
   const { paymentId, status, note } = props?.data ?? {};
   if (!paymentId || !status) throw new Error("Missing parameters");
 
-  const { data, error } = await supabase.rpc('update_payment_proof', {
+  return adminRpc('update_payment_proof', {
     p_payment_id: paymentId,
     p_status: status,
     p_note: note
   });
-  if (error) throw error;
-  return data;
 }
 
 // POST: verify-admin-code
 export async function g(props) {
   const code = props?.data?.code;
-  // Verify server-side via RPC (admin_access_code is in app_secrets, not settings)
   const { data: verifyResult, error: verifyError } = await supabase.rpc('verify_admin_code', { p_code: code });
   if (verifyError) throw verifyError;
-  if (verifyResult?.ok) {
-    return { ok: true };
+  if (verifyResult?.ok && verifyResult?.token) {
+    sessionStorage.setItem('admin_verified', JSON.stringify({
+      token: verifyResult.token,
+      expiresAt: verifyResult.expiresAt
+    }));
+    return { ok: true, expiresAt: verifyResult.expiresAt };
   }
   return { ok: false };
 }
@@ -71,8 +84,7 @@ export async function g(props) {
 //  and regular table queries return empty due to RLS)
 export async function i() {
   try {
-    const { data, error } = await supabase.rpc('admin_get_all_data');
-    if (error) throw error;
+    const data = await adminRpc('admin_get_all_data');
     if (!data) throw new Error('No data returned from admin_get_all_data');
     return {
       members: data.members || [],
@@ -152,45 +164,36 @@ export async function i() {
 // POST: get-payment-proof-url
 export async function l(props) {
   const { paymentId } = props?.data ?? {};
-  const { data, error } = await supabase.rpc('admin_get_payment_proof_url', {
-    p_payment_id: paymentId
+  const session = getAdminSession();
+  if (!session) throw new Error('Admin session expired.');
+  const { data, error } = await supabase.functions.invoke('admin-proof-url', {
+    body: { adminToken: session.token, kind: 'payment', recordId: paymentId }
   });
   if (error) throw error;
-  const path = data?.path;
-  if (!path) return { url: null };
-  const { data: urlData, error: urlErr } = await supabase.storage
-    .from('payment-proofs')
-    .createSignedUrl(path, 3600);
-  if (urlErr) throw urlErr;
-  return { url: urlData?.signedUrl || null };
+  return { url: data?.url || null, expired: Boolean(data?.expired) };
 }
 
 // POST: update-member-status
 export async function m(props) {
   const { userId, status } = props?.data ?? {};
   if (!userId || !status) throw new Error('Missing userId or status');
-  const { data, error } = await supabase.rpc('admin_update_member_status', {
+  await adminRpc('admin_update_member_status', {
     p_user_id: userId,
     p_status: status
   });
-  if (error) throw error;
   return { ok: true };
 }
 
 // POST: get-order-proof-url
 export async function n(props) {
   const { orderId } = props?.data ?? {};
-  const { data, error } = await supabase.rpc('admin_get_order_proof_url', {
-    p_order_id: orderId
+  const session = getAdminSession();
+  if (!session) throw new Error('Admin session expired.');
+  const { data, error } = await supabase.functions.invoke('admin-proof-url', {
+    body: { adminToken: session.token, kind: 'order', recordId: orderId }
   });
   if (error) throw error;
-  const path = data?.path;
-  if (!path) return { url: null };
-  const { data: urlData, error: urlErr } = await supabase.storage
-    .from('screenshot-proofs')
-    .createSignedUrl(path, 3600);
-  if (urlErr) throw urlErr;
-  return { url: urlData?.signedUrl || null };
+  return { url: data?.url || null, expired: Boolean(data?.expired) };
 }
 
 // POST: submit payment proof / order proof (imported as h in checkout)
@@ -233,8 +236,11 @@ export async function h(props) {
       p_sender_number: senderNumber,
       p_screenshot_path: screenshotPath
     });
-    if (rpcErr) throw rpcErr;
-    if (!rpcResult?.ok) throw new Error(rpcResult?.reason || 'Submission failed');
+    if (rpcErr || !rpcResult?.ok) {
+      await supabase.storage.from(bucket).remove([screenshotPath]);
+      if (rpcErr) throw rpcErr;
+      throw new Error(rpcResult?.reason || 'Submission failed');
+    }
     return { ok: true, order: rpcResult.order };
   } else {
     const { data: rpcResult, error: rpcErr } = await supabase.rpc('submit_registration_payment', {
@@ -258,9 +264,8 @@ export async function u(props) {
   const settingsData = props?.data;
   if (!settingsData) return { ok: true };
 
-  const { error } = await supabase
-    .from('settings')
-    .update({
+  await adminRpc('admin_update_settings', {
+    p_settings: {
       payment_ghana: settingsData.payment_ghana,
       payment_nigeria: settingsData.payment_nigeria,
       registration_ghs: Number(settingsData.registration_ghs),
@@ -269,10 +274,8 @@ export async function u(props) {
       efootball_cost: Number(settingsData.efootball_cost),
       efootball_expiry: Number(settingsData.efootball_expiry),
       spin_cost: Number(settingsData.spin_cost)
-    })
-    .eq('id', 'global_config');
-
-  if (error) throw error;
+    }
+  });
   return { ok: true };
 }
 
@@ -284,12 +287,7 @@ export async function deleteAdminItem(props) {
   const allowedTables = ['profiles', 'predictions', 'booking_code_requests', 'payments', 'orders'];
   if (!allowedTables.includes(table)) throw new Error("Invalid table name");
 
-  const { error } = await supabase
-    .from(table)
-    .delete()
-    .eq('id', id);
-
-  if (error) throw error;
+  await adminRpc('admin_delete_record', { p_table: table, p_id: id });
   return { ok: true };
 }
 
@@ -313,14 +311,12 @@ export function t(props) {
     }
     setLoading(true);
     try {
-      const { error } = await supabase.rpc('admin_approve_booking_code', {
+      await adminRpc('admin_approve_booking_code', {
         p_request_id: selectedRequest.id,
         p_code: code,
         p_market: market,
         p_stake_time: new Date(stakeTime).toISOString()
       });
-
-      if (error) throw error;
 
       alert("Booking code published successfully!");
       setCode('');
@@ -640,13 +636,12 @@ export function p_comp(props) {
 
       // Use grant_currencies RPC for proper ledger entries
       if (addD > 0 || addG > 0 || addT > 0) {
-        const { data, error } = await supabase.rpc('grant_currencies', {
+        const data = await adminRpc('grant_currencies', {
           p_user_id: grantUser.id,
           p_diamonds: addD,
           p_gold: addG,
           p_tickets: addT
         });
-        if (error) throw error;
         if (!data?.ok) throw new Error(data?.error || 'Failed to grant currencies');
       }
 
@@ -772,14 +767,13 @@ export function d_comp(props) {
   // Otherwise, render Security settings passcode update
   const handleSave = async (e) => {
     e.preventDefault();
-    if (passcode.length < 4) {
-      alert("Passcode must be at least 4 characters");
+    if (passcode.length < 6) {
+      alert("Passcode must be at least 6 characters");
       return;
     }
     setLoading(true);
     try {
-      const { data, error } = await supabase.rpc('change_admin_access_code', { p_new_code: passcode });
-      if (error) throw error;
+      const data = await adminRpc('change_admin_access_code', { p_new_code: passcode });
       if (!data?.ok) throw new Error('Failed to update access code');
       alert("Admin access passcode updated successfully!");
       setPasscode('');
@@ -801,7 +795,7 @@ export function d_comp(props) {
             type: "password",
             value: passcode,
             onChange: e => setPasscode(e.target.value),
-            placeholder: "e.g. 12345",
+            placeholder: "At least 6 characters",
             className: "w-full h-10 px-3 bg-background border border-border rounded-xl font-bold"
           })
         ]
@@ -930,146 +924,11 @@ export function f_comp(props) {
 
 // 7. Manual Predictions Admin View (exported as re / g)
 export function g_comp(props) {
-  const { predictions, invalidate } = props;
-  const [home, setHome] = React.useState('');
-  const [away, setAway] = React.useState('');
-  const [pick, setPick] = React.useState('1');
-  const [drawChance, setDrawChance] = React.useState(33);
-  const [correctScore, setCorrectScore] = React.useState('2-1');
-  const [goals, setGoals] = React.useState('Over 2.5');
-  const [confidence, setConfidence] = React.useState(75);
-  const [loading, setLoading] = React.useState(false);
-
-  const handleCreate = async (e) => {
-    e.preventDefault();
-    if (!home || !away || !correctScore) {
-      alert("Fill all match details");
-      return;
-    }
-    setLoading(true);
-    try {
-      const matchObj = {
-        home,
-        away,
-        pick,
-        pickLabel: pick === '1' ? 'Home Win' : pick === '2' ? 'Away Win' : 'Draw',
-        drawChance: Number(drawChance),
-        correctScore,
-        goals,
-        confidence: Number(confidence),
-        probabilities: {
-          home: pick === '1' ? 60 : 20,
-          draw: pick === 'X' ? 60 : 20,
-          away: pick === '2' ? 60 : 20
-        }
-      };
-
-      // Add a dummy predicted match to the predictions table
-      // Retrieve the current user's UUID (admin)
-      const { data: { user } } = await supabase.auth.getUser();
-
-      const { error } = await supabase
-        .from('predictions')
-        .insert({
-          user_id: user?.id,
-          cost: 0,
-          result: { matches: [matchObj] }
-        });
-
-      if (error) throw error;
-      alert("Manual prediction added!");
-      setHome('');
-      setAway('');
-      invalidate?.();
-    } catch (err) {
-      alert("Error: " + err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { predictions } = props;
 
   return j.jsxs("div", {
     className: "space-y-6",
     children: [
-      j.jsxs("form", {
-        onSubmit: handleCreate,
-        className: "p-6 border border-border rounded-3xl bg-ash/30 space-y-4 max-w-lg",
-        children: [
-          j.jsx("h3", { className: "text-base font-black text-primary uppercase tracking-wide", children: "Create Mock/Manual Match Pick" }),
-          j.jsxs("div", {
-            className: "grid grid-cols-2 gap-4",
-            children: [
-              j.jsxs("div", {
-                children: [
-                  j.jsx("label", { className: "text-xs font-bold text-muted-foreground block mb-1", children: "Home Team" }),
-                  j.jsx("input", { type: "text", value: home, onChange: e => setHome(e.target.value), placeholder: "e.g. Real Madrid", className: "w-full h-10 px-3 bg-background border border-border rounded-xl font-bold" })
-                ]
-              }),
-              j.jsxs("div", {
-                children: [
-                  j.jsx("label", { className: "text-xs font-bold text-muted-foreground block mb-1", children: "Away Team" }),
-                  j.jsx("input", { type: "text", value: away, onChange: e => setAway(e.target.value), placeholder: "e.g. Barcelona", className: "w-full h-10 px-3 bg-background border border-border rounded-xl font-bold" })
-                ]
-              })
-            ]
-          }),
-          j.jsxs("div", {
-            className: "grid grid-cols-3 gap-4",
-            children: [
-              j.jsxs("div", {
-                children: [
-                  j.jsx("label", { className: "text-xs font-bold text-muted-foreground block mb-1", children: "AI Pick" }),
-                  j.jsxs("select", {
-                    value: pick,
-                    onChange: e => setPick(e.target.value),
-                    className: "w-full h-10 px-3 bg-background border border-border rounded-xl font-bold",
-                    children: [
-                      j.jsx("option", { value: "1", children: "1 (Home Win)" }),
-                      j.jsx("option", { value: "X", children: "X (Draw)" }),
-                      j.jsx("option", { value: "2", children: "2 (Away Win)" })
-                    ]
-                  })
-                ]
-              }),
-              j.jsxs("div", {
-                children: [
-                  j.jsx("label", { className: "text-xs font-bold text-muted-foreground block mb-1", children: "Correct Score" }),
-                  j.jsx("input", { type: "text", value: correctScore, onChange: e => setCorrectScore(e.target.value), className: "w-full h-10 px-3 bg-background border border-border rounded-xl font-bold" })
-                ]
-              }),
-              j.jsxs("div", {
-                children: [
-                  j.jsx("label", { className: "text-xs font-bold text-muted-foreground block mb-1", children: "Goals Selection" }),
-                  j.jsx("input", { type: "text", value: goals, onChange: e => setGoals(e.target.value), className: "w-full h-10 px-3 bg-background border border-border rounded-xl font-bold" })
-                ]
-              })
-            ]
-          }),
-          j.jsxs("div", {
-            className: "grid grid-cols-2 gap-4",
-            children: [
-              j.jsxs("div", {
-                children: [
-                  j.jsx("label", { className: "text-xs font-bold text-muted-foreground block mb-1", children: "AI Confidence (%)" }),
-                  j.jsx("input", { type: "number", value: confidence, onChange: e => setConfidence(e.target.value), className: "w-full h-10 px-3 bg-background border border-border rounded-xl font-bold" })
-                ]
-              }),
-              j.jsxs("div", {
-                children: [
-                  j.jsx("label", { className: "text-xs font-bold text-muted-foreground block mb-1", children: "Draw Probability (%)" }),
-                  j.jsx("input", { type: "number", value: drawChance, onChange: e => setDrawChance(e.target.value), className: "w-full h-10 px-3 bg-background border border-border rounded-xl font-bold" })
-                ]
-              })
-            ]
-          }),
-          j.jsx("button", {
-            type: "submit",
-            disabled: loading,
-            className: "px-6 py-2.5 bg-primary text-primary-foreground rounded-full text-sm font-black pulse-glow",
-            children: loading ? "Creating..." : "Add Pick"
-          })
-        ]
-      }),
       j.jsxs("div", {
         className: "border border-border/60 rounded-3xl overflow-hidden bg-ash/30",
         children: [
@@ -1134,5 +993,5 @@ export {
   p_comp as p,
   r_comp as r,
   l as s,
-  f as o
+  n as o
 };

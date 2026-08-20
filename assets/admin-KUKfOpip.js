@@ -4,6 +4,20 @@ var G = t();
 import {i as r, n as i} from "./auth-middleware-vq8LsfrH.js";
 import {C as SupabaseClient, S as a, _ as o, a as s, c, d as l, i as u, k as d, o as f, p, v as m} from "./index-sG8SpmM9.js";
 var supabaseClient = SupabaseClient;
+
+function readAdminSession() {
+    try {
+        const session = JSON.parse(sessionStorage.getItem('admin_verified') || 'null');
+        if (session?.token && Number(session.expiresAt) > Date.now()) return session;
+    } catch (_) { /* ignore malformed browser state */ }
+    sessionStorage.removeItem('admin_verified');
+    return null;
+}
+
+function adminRpc(name, args = {}) {
+    const session = readAdminSession();
+    return supabaseClient.rpc(name, { ...args, p_admin_token: session?.token ?? null });
+}
 import {o as h, t as g} from "./button-DS1rjqG5.js";
 import {n as _, t as v} from "./trending-up-C2afOBtn.js";
 import {n as y, t as ee} from "./log-out-UeAcfEkt.js";
@@ -331,7 +345,7 @@ var ve = h(`ban`, [[`circle`, {
     icon: y
 }, {
     id: `predictions`,
-    label: `Manual Predictions`,
+    label: `Prediction Audit`,
     icon: fe
 }, {
     id: `earnings`,
@@ -384,24 +398,11 @@ function Ee() {
       , {data: t, isLoading: n} = i({
         queryKey: [`admin-session`],
         queryFn: async () => {
-            // Check Supabase Auth first (for logged-in admin users)
             try {
-                const { data, error } = await supabaseClient.rpc('check_admin_session');
+                const { data, error } = await adminRpc('check_admin_session');
                 if (!error && data?.unlocked) return { unlocked: true };
             } catch (_) { /* ignore */ }
-
-            // Check session-based passcode verification (admin panel's own auth)
-            try {
-                const session = JSON.parse(sessionStorage.getItem('admin_verified') || 'null');
-                if (session?.verified && session?.ts) {
-                    const elapsed = Date.now() - session.ts;
-                    if (elapsed < 30 * 60 * 1000) { // 30-minute session
-                        return { unlocked: true };
-                    }
-                    sessionStorage.removeItem('admin_verified');
-                }
-            } catch (_) { /* ignore */ }
-
+            sessionStorage.removeItem('admin_verified');
             return { unlocked: false };
         },
         enabled: typeof window !== 'undefined',
@@ -452,14 +453,18 @@ function De() {
                 e.trim()) {
                     i(!0);
                     try {
-                        const result = await supabaseClient.rpc('verify_admin_code', { p_code: e.trim() });
-                        if (result.error || !result.data?.ok) {
+                        const result = await adminRpc('verify_admin_code', { p_code: e.trim() });
+                        if (result.error || !result.data?.ok || !result.data?.token) {
                             u.error(`Incorrect access code`),
                             t(``);
                             return
                         }
-                        // Store admin session (30 min, clears on tab close)
-                        sessionStorage.setItem('admin_verified', JSON.stringify({verified: true, ts: Date.now(), passcode: e.trim()}));
+                        // Store only the opaque, short-lived server session. The
+                        // access code is never retained in browser storage.
+                        sessionStorage.setItem('admin_verified', JSON.stringify({
+                            token: result.data.token,
+                            expiresAt: result.data.expiresAt
+                        }));
                         await a.invalidateQueries({
                             queryKey: [`admin-session`]
                         })
@@ -519,7 +524,7 @@ function EfootballPanel(props) {
     }
     setLoading(true);
     try {
-      const { error } = await supabaseClient.rpc('admin_approve_booking_code', {
+      const { error } = await adminRpc('admin_approve_booking_code', {
         p_request_id: selectedRequest.id,
         p_code: code,
         p_market: market,
@@ -645,7 +650,7 @@ function EfootballPanel(props) {
                         onClick: async () => {
                           if (confirm(`Delete booking request from ${userEmail}?`)) {
                             try {
-                              await supabaseClient.rpc('admin_delete_record', { p_table: 'booking_code_requests', p_id: req.id });
+                              await adminRpc('admin_delete_record', { p_table: 'booking_code_requests', p_id: req.id });
                               alert("Booking request deleted");
                               invalidate?.();
                             } catch (err) {
@@ -682,7 +687,7 @@ function PaysettingsPanel(props) {
     e.preventDefault();
     setLoading(true);
     try {
-      const { error } = await supabaseClient.rpc('admin_update_settings', {
+      const { error } = await adminRpc('admin_update_settings', {
         p_settings: {
           payment_ghana: { provider: ghanaProvider, accountName: ghanaName, accountNumber: ghanaNumber },
           payment_nigeria: { provider: nigeriaProvider, accountName: nigeriaName, accountNumber: nigeriaNumber }
@@ -834,7 +839,7 @@ function PaymentsPanel(props) {
                       onClick: async () => {
                         if (confirm(`Delete registration payment proof from ${p.email}?`)) {
                           try {
-                            await supabaseClient.rpc('admin_delete_record', { p_table: 'payments', p_id: p.id });
+                            await adminRpc('admin_delete_record', { p_table: 'payments', p_id: p.id });
                             alert("Payment proof deleted");
                             invalidate?.();
                           } catch (err) {
@@ -887,7 +892,7 @@ function PaymentsPanel(props) {
                       onClick: async () => {
                         if (confirm(`Delete diamond order from ${o.email}?`)) {
                           try {
-                            await supabaseClient.rpc('admin_delete_record', { p_table: 'orders', p_id: o.id });
+                            await adminRpc('admin_delete_record', { p_table: 'orders', p_id: o.id });
                             alert("Diamond order deleted");
                             invalidate?.();
                           } catch (err) {
@@ -986,7 +991,7 @@ function MembersPanel(props) {
 
       // Use grant_currencies RPC for proper ledger entries + notifications
       if (addD > 0 || addG > 0 || addT > 0) {
-        const { data, error } = await supabaseClient.rpc('grant_currencies', {
+        const { data, error } = await adminRpc('grant_currencies', {
           p_user_id: grantUser.id,
           p_diamonds: addD,
           p_gold: addG,
@@ -1108,7 +1113,7 @@ function MembersPanel(props) {
                       onClick: async () => {
                         if (confirm(`Delete member ${member.email}?`)) {
                           try {
-                            await supabaseClient.rpc('admin_delete_record', { p_table: 'profiles', p_id: member.id });
+                            await adminRpc('admin_delete_record', { p_table: 'profiles', p_id: member.id });
                             alert(`Member ${member.email} deleted`);
                             invalidate?.();
                           } catch (err) {
@@ -1141,13 +1146,13 @@ function VipSecurityPanel(props) {
 
   const handleSave = async (e) => {
     e.preventDefault();
-    if (passcode.length < 4) {
-      alert("Passcode must be at least 4 digits");
+    if (passcode.length < 6) {
+      alert("Passcode must be at least 6 characters");
       return;
     }
     setLoading(true);
     try {
-      const { data, error } = await supabaseClient.rpc('change_admin_access_code', { p_new_code: passcode });
+      const { data, error } = await adminRpc('change_admin_access_code', { p_new_code: passcode });
       if (error) throw error;
       if (!data?.ok) throw new Error('Failed to update access code');
       alert("Admin access passcode updated successfully!");
@@ -1171,7 +1176,7 @@ function VipSecurityPanel(props) {
             type: "password",
             value: passcode,
             onChange: e => setPasscode(e.target.value),
-            placeholder: "e.g. 12345",
+            placeholder: "At least 6 characters",
             className: "w-full h-10 px-3 bg-background border border-border rounded-xl font-bold"
           })
         ]
@@ -1201,9 +1206,8 @@ function PricingPanel(props) {
   I.useEffect(() => {
     (async () => {
       try {
-        const adminSession = JSON.parse(sessionStorage.getItem('admin_verified') || '{}');
-        const { data: secrets } = await supabaseClient.rpc('get_app_secrets', { p_passcode: adminSession.passcode || adminSession.code || '' });
-        if (secrets?.gemini_api_key) setGeminiApiKey(secrets.gemini_api_key);
+        const { data: secrets } = await adminRpc('get_app_secrets');
+        if (secrets?.gemini_api_key_configured) setGeminiApiKey('');
       } catch (e) { /* ignore - key is optional */ }
     })();
   }, []);
@@ -1222,13 +1226,12 @@ function PricingPanel(props) {
         spin_cost: Number(spinCost)
       };
 
-      const { error } = await supabaseClient.rpc('admin_update_settings', { p_settings: updatePayload });
+      const { error } = await adminRpc('admin_update_settings', { p_settings: updatePayload });
       if (error) throw error;
 
       // 2. Save API key via separate admin-only RPC (goes to app_secrets, not settings)
       if (geminiApiKey.trim()) {
-        const adminSession = JSON.parse(sessionStorage.getItem('admin_verified') || '{}');
-        const { error: secretErr } = await supabaseClient.rpc('update_app_secrets', { p_gemini_api_key: geminiApiKey.trim(), p_passcode: adminSession.passcode || adminSession.code || '' });
+        const { error: secretErr } = await adminRpc('update_app_secrets', { p_gemini_api_key: geminiApiKey.trim() });
         if (secretErr) throw secretErr;
       }
 
@@ -1299,8 +1302,8 @@ function PricingPanel(props) {
       G.jsxs("div", {
         children: [
           G.jsx("label", { className: "text-xs font-bold text-muted-foreground block mb-1", children: "🤖 Gemini AI Vision API Key" }),
-          G.jsx("input", { type: "text", value: geminiApiKey, onChange: e => setGeminiApiKey(e.target.value), placeholder: "Paste your Gemini API key (AIzaSy...)", className: "w-full h-10 px-3 bg-background border border-border rounded-xl font-mono text-xs font-bold" }),
-          G.jsx("p", { className: "text-[11px] text-muted-foreground mt-1", children: "Enables Gemini 1.5 Flash Vision OCR to analyze screenshots." })
+          G.jsx("input", { type: "password", autoComplete: "off", value: geminiApiKey, onChange: e => setGeminiApiKey(e.target.value), placeholder: "Enter a new key to replace the stored key", className: "w-full h-10 px-3 bg-background border border-border rounded-xl font-mono text-xs font-bold" }),
+          G.jsx("p", { className: "text-[11px] text-muted-foreground mt-1", children: "Stored server-side and used only by the private screenshot-analysis function." })
         ]
       }),
       G.jsx("div", {
@@ -1317,140 +1320,11 @@ function PricingPanel(props) {
 }
 
 function PredictionsPanel(props) {
-  const { predictions, invalidate } = props;
-  const [home, setHome] = I.useState('');
-  const [away, setAway] = I.useState('');
-  const [pick, setPick] = I.useState('1');
-  const [drawChance, setDrawChance] = I.useState(33);
-  const [correctScore, setCorrectScore] = I.useState('2-1');
-  const [goals, setGoals] = I.useState('Over 2.5');
-  const [confidence, setConfidence] = I.useState(75);
-  const [loading, setLoading] = I.useState(false);
-
-  const handleCreate = async (e) => {
-    e.preventDefault();
-    if (!home || !away || !correctScore) {
-      alert("Fill all match details");
-      return;
-    }
-    setLoading(true);
-    try {
-      const matchObj = {
-        home,
-        away,
-        pick,
-        pickLabel: pick === '1' ? 'Home Win' : pick === '2' ? 'Away Win' : 'Draw',
-        drawChance: Number(drawChance),
-        correctScore,
-        goals,
-        confidence: Number(confidence),
-        probabilities: {
-          home: pick === '1' ? 60 : 20,
-          draw: pick === 'X' ? 60 : 20,
-          away: pick === '2' ? 60 : 20
-        }
-      };
-
-      const { error } = await supabaseClient.rpc('admin_insert_prediction', {
-        p_user_id: null,
-        p_result: { matches: [matchObj] },
-        p_cost: 0
-      });
-
-      if (error) throw error;
-      alert("Manual prediction added!");
-      setHome('');
-      setAway('');
-      invalidate?.();
-    } catch (err) {
-      alert("Error: " + err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { predictions } = props;
 
   return G.jsxs("div", {
     className: "space-y-6",
     children: [
-      G.jsxs("form", {
-        onSubmit: handleCreate,
-        className: "p-6 border border-border rounded-3xl bg-ash/30 space-y-4 max-w-lg",
-        children: [
-          G.jsx("h3", { className: "text-base font-black text-primary uppercase tracking-wide", children: "Create Mock/Manual Match Pick" }),
-          G.jsxs("div", {
-            className: "grid grid-cols-2 gap-4",
-            children: [
-              G.jsxs("div", {
-                children: [
-                  G.jsx("label", { className: "text-xs font-bold text-muted-foreground block mb-1", children: "Home Team" }),
-                  G.jsx("input", { type: "text", value: home, onChange: e => setHome(e.target.value), placeholder: "e.g. Real Madrid", className: "w-full h-10 px-3 bg-background border border-border rounded-xl font-bold" })
-                ]
-              }),
-              G.jsxs("div", {
-                children: [
-                  G.jsx("label", { className: "text-xs font-bold text-muted-foreground block mb-1", children: "Away Team" }),
-                  G.jsx("input", { type: "text", value: away, onChange: e => setAway(e.target.value), placeholder: "e.g. Barcelona", className: "w-full h-10 px-3 bg-background border border-border rounded-xl font-bold" })
-                ]
-              })
-            ]
-          }),
-          G.jsxs("div", {
-            className: "grid grid-cols-3 gap-4",
-            children: [
-              G.jsxs("div", {
-                children: [
-                  G.jsx("label", { className: "text-xs font-bold text-muted-foreground block mb-1", children: "AI Pick" }),
-                  G.jsxs("select", {
-                    value: pick,
-                    onChange: e => setPick(e.target.value),
-                    className: "w-full h-10 px-3 bg-background border border-border rounded-xl font-bold",
-                    children: [
-                      G.jsx("option", { value: "1", children: "1 (Home Win)" }),
-                      G.jsx("option", { value: "X", children: "X (Draw)" }),
-                      G.jsx("option", { value: "2", children: "2 (Away Win)" })
-                    ]
-                  })
-                ]
-              }),
-              G.jsxs("div", {
-                children: [
-                  G.jsx("label", { className: "text-xs font-bold text-muted-foreground block mb-1", children: "Correct Score" }),
-                  G.jsx("input", { type: "text", value: correctScore, onChange: e => setCorrectScore(e.target.value), className: "w-full h-10 px-3 bg-background border border-border rounded-xl font-bold" })
-                ]
-              }),
-              G.jsxs("div", {
-                children: [
-                  G.jsx("label", { className: "text-xs font-bold text-muted-foreground block mb-1", children: "Goals Selection" }),
-                  G.jsx("input", { type: "text", value: goals, onChange: e => setGoals(e.target.value), className: "w-full h-10 px-3 bg-background border border-border rounded-xl font-bold" })
-                ]
-              })
-            ]
-          }),
-          G.jsxs("div", {
-            className: "grid grid-cols-2 gap-4",
-            children: [
-              G.jsxs("div", {
-                children: [
-                  G.jsx("label", { className: "text-xs font-bold text-muted-foreground block mb-1", children: "AI Confidence (%)" }),
-                  G.jsx("input", { type: "number", value: confidence, onChange: e => setConfidence(e.target.value), className: "w-full h-10 px-3 bg-background border border-border rounded-xl font-bold" })
-                ]
-              }),
-              G.jsxs("div", {
-                children: [
-                  G.jsx("label", { className: "text-xs font-bold text-muted-foreground block mb-1", children: "Draw Probability (%)" }),
-                  G.jsx("input", { type: "number", value: drawChance, onChange: e => setDrawChance(e.target.value), className: "w-full h-10 px-3 bg-background border border-border rounded-xl font-bold" })
-                ]
-              })
-            ]
-          }),
-          G.jsx("button", {
-            type: "submit",
-            disabled: loading,
-            className: "px-6 py-2.5 bg-primary text-primary-foreground rounded-full text-sm font-black pulse-glow",
-            children: loading ? "Creating..." : "Add Pick"
-          })
-        ]
-      }),
       G.jsxs("div", {
         className: "border border-border/60 rounded-3xl overflow-hidden bg-ash/30",
         children: [
@@ -1483,7 +1357,7 @@ function PredictionsPanel(props) {
                     onClick: async () => {
                       if (confirm("Delete this prediction record?")) {
                         try {
-                          await supabaseClient.rpc('admin_delete_record', { p_table: 'predictions', p_id: p.id });
+                          await adminRpc('admin_delete_record', { p_table: 'predictions', p_id: p.id });
                           alert("Prediction deleted");
                           invalidate?.();
                         } catch (err) {
@@ -1618,28 +1492,38 @@ function Oe() {
     }
     , [d])
       , De = async e => {
-        let t = await re({
-            data: {
-                paymentId: e
+        try {
+            let t = await re({
+                data: {
+                    paymentId: e
+                }
+            });
+            if (!t.url) {
+                u.error(t.expired ? `This proof expired after 15 days` : `No screenshot on this submission`);
+                return
             }
-        });
-        if (!t.url) {
-            u.error(`No screenshot on this submission`);
-            return
+            _w(t.url)
+        } catch (e) {
+            console.error(`Could not open payment proof`, e),
+            u.error(`Could not open this payment proof`)
         }
-        _w(t.url)
     }
       , Oe = async e => {
-        let t = await se({
-            data: {
-                orderId: e
+        try {
+            let t = await se({
+                data: {
+                    orderId: e
+                }
+            });
+            if (!t.url) {
+                u.error(t.expired ? `This proof expired after 15 days` : `No screenshot on this order`);
+                return
             }
-        });
-        if (!t.url) {
-            u.error(`No screenshot on this order`);
-            return
+            _w(t.url)
+        } catch (e) {
+            console.error(`Could not open order proof`, e),
+            u.error(`Could not open this order proof`)
         }
-        _w(t.url)
     }
     ;
     return (0,
@@ -1678,7 +1562,8 @@ function Oe() {
             G.jsxs)(`button`, {
                 onClick: async () => {
                     try {
-                        await supabaseClient.rpc('log_admin_action', { p_action: 'admin_logout' });
+                        await adminRpc('log_admin_action', { p_action: 'admin_logout' });
+                        await adminRpc('admin_logout');
                     } catch (_) { /* ignore audit log errors */ }
                     sessionStorage.removeItem('admin_verified');
                     await l.cancelQueries();
@@ -2561,7 +2446,7 @@ function Oe() {
                 }), (0,
                 G.jsx)(`h2`, {
                     className: `min-w-0 truncate text-2xl font-black tracking-tight`,
-                    children: `Manual Predictions`
+                    children: `Prediction Audit`
                 })]
             }), (0,
             G.jsx)(PredictionsPanel, {
@@ -2576,10 +2461,18 @@ function Oe() {
             onOpenChange: e => e || _w(null),
             children: (0,
             G.jsxs)(he, {
-                className: `max-w-2xl rounded-3xl border-border/70 bg-card p-0 overflow-hidden`,
+                className: `proof-viewer relative max-w-2xl rounded-3xl border-border/70 bg-card p-0 overflow-hidden`,
                 children: [(0,
+                G.jsx)(`button`, {
+                    type: `button`,
+                    onClick: () => _w(null),
+                    "aria-label": `Close proof image`,
+                    title: `Close`,
+                    className: `absolute top-3 right-3 z-20 grid h-11 w-11 place-items-center rounded-full border border-white/20 bg-black/80 text-2xl leading-none font-medium text-white shadow-lg transition hover:bg-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary`,
+                    children: `×`
+                }), (0,
                 G.jsxs)(me, {
-                    className: `p-6 border-b border-border/60`,
+                    className: `proof-viewer__header p-6 pr-20 border-b border-border/60`,
                     children: [(0,
                     G.jsx)(pe, {
                         className: `text-xl font-black`,
@@ -2590,22 +2483,13 @@ function Oe() {
                     })]
                 }), (0,
                 G.jsx)(`div`, {
-                    className: `p-6 flex justify-center bg-ash/30`,
+                    className: `proof-viewer__body p-6 flex justify-center bg-ash/30`,
                     children: _C ? (0,
                     G.jsx)(`img`, {
                         src: _C,
                         alt: `Payment screenshot proof`,
-                        className: `max-h-[70vh] rounded-2xl object-contain shadow-2xl`
+                        className: `proof-viewer__image rounded-2xl object-contain shadow-2xl`
                     }) : null
-                }), (0,
-                G.jsx)(`div`, {
-                    className: `p-6 border-t border-border/60 flex justify-end`,
-                    children: (0,
-                    G.jsx)(g, {
-                        onClick: () => _w(null),
-                        className: `rounded-full px-6`,
-                        children: `Close`
-                    })
                 })]
             })
         }), (0,

@@ -53,9 +53,9 @@
       c.id = "ve-toasts";
       document.body.appendChild(c);
     }
-    const colour = { success: "#00ff88", error: "#ff4444", info: "#4488ff", warning: "#fbbf24" }[kind] || "#4488ff";
+    const colour = { success: "#ef233c", error: "#ff4444", info: "#f5f5f5", warning: "#ffffff" }[kind] || "#f5f5f5";
     const el = document.createElement("div");
-    el.style.cssText = `background:#111827;border:1px solid ${colour};border-radius:14px;padding:14px 18px;color:#f1f1f1;font-size:13px;line-height:1.45;box-shadow:0 8px 32px rgba(0,0,0,.45);animation:veSlideIn .3s ease;opacity:1;transition:opacity .35s`;
+    el.style.cssText = `background:#0b0b0d;border:1px solid ${colour};border-radius:14px;padding:14px 18px;color:#ffffff;font-size:13px;line-height:1.45;box-shadow:0 8px 32px rgba(0,0,0,.45);animation:veSlideIn .3s ease;opacity:1;transition:opacity .35s`;
     el.innerHTML = `<div style="font-weight:800;color:${colour};margin-bottom:3px">${esc(title)}</div><div style="color:#9ca3af">${esc(body)}</div>`;
     c.appendChild(el);
     setTimeout(() => { el.style.opacity = "0"; setTimeout(() => el.remove(), 350); }, 6000);
@@ -107,8 +107,8 @@
     if (!header) return;
     const badge = document.createElement("span");
     badge.id = "ve-live";
-    badge.style.cssText = "display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:800;color:#00ff88;padding:5px 10px;border-radius:20px;border:1px solid rgba(0,255,136,.3);background:rgba(0,255,136,.06);letter-spacing:.5px";
-    badge.innerHTML = '<span style="width:7px;height:7px;border-radius:50%;background:#00ff88;animation:vePulse 2s infinite"></span> LIVE';
+    badge.style.cssText = "display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:800;color:#ef233c;padding:5px 10px;border-radius:20px;border:1px solid rgba(239,35,60,.3);background:rgba(239,35,60,.06);letter-spacing:.5px";
+    badge.innerHTML = '<span style="width:7px;height:7px;border-radius:50%;background:#ef233c;animation:vePulse 2s infinite"></span> LIVE';
     header.querySelector("div")?.appendChild(badge);
   }
 
@@ -151,7 +151,7 @@
       Notification.requestPermission();
 
     addLiveBadge();
-    console.log("%c[prediit] ⚡ Admin real-time sync active", "color:#00ff88;font-weight:bold");
+    console.log("%c[prediit] ⚡ Admin real-time sync active", "color:#ef233c;font-weight:bold");
 
     /* ── New payment proofs (registrations) ────────────── */
     sb.channel("admin-payments")

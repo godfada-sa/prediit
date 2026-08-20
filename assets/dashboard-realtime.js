@@ -66,12 +66,12 @@
       document.body.appendChild(c);
     }
     const colour = {
-      success: "#00ff88",
+      success: "#ef233c",
       error: "#ff4444",
-      info: "#4488ff",
-    }[kind] || "#4488ff";
+      info: "#f5f5f5",
+    }[kind] || "#f5f5f5";
     const el = document.createElement("div");
-    el.style.cssText = `background:#111827;border:1px solid ${colour};border-radius:14px;padding:14px 18px;color:#f1f1f1;font-size:13px;line-height:1.45;box-shadow:0 8px 32px rgba(0,0,0,.45);animation:veSlideIn .3s ease;opacity:1;transition:opacity .35s`;
+    el.style.cssText = `background:#0b0b0d;border:1px solid ${colour};border-radius:14px;padding:14px 18px;color:#ffffff;font-size:13px;line-height:1.45;box-shadow:0 8px 32px rgba(0,0,0,.45);animation:veSlideIn .3s ease;opacity:1;transition:opacity .35s`;
     el.innerHTML = `<div style="font-weight:800;color:${colour};margin-bottom:3px">${esc(title)}</div><div style="color:#9ca3af">${esc(body)}</div>`;
     c.appendChild(el);
     setTimeout(() => {
@@ -296,7 +296,7 @@
 
             console.log(
               `%c[prediit] ⏸ Disabled 30s polling on query: ${JSON.stringify(query.queryKey)}`,
-              "color:#fbbf24;font-weight:bold"
+              "color:#ffffff;font-weight:bold"
             );
           }
         }
@@ -325,7 +325,7 @@
       });
       console.log(
         `%c[prediit] ▶ Restored ${originalInterval / 1000}s polling on: ${JSON.stringify(queryKey)}`,
-        "color:#22c55e;font-weight:bold"
+        "color:#ef233c;font-weight:bold"
       );
     }
     _pollingIntervals = [];
@@ -366,7 +366,7 @@
 
     console.log(
       `%c[prediit] ⚡ Real-time sync active for ${user.email}`,
-      "color:#00ff88;font-weight:bold"
+      "color:#ef233c;font-weight:bold"
     );
 
     // Wait a tick for React to mount, then disable polling
@@ -374,12 +374,12 @@
       if (disablePolling()) {
         console.log(
           "%c[prediit] ✅ 30s polling disabled — realtime replaces it",
-          "color:#00ff88;font-weight:bold"
+          "color:#ef233c;font-weight:bold"
         );
       } else {
         console.log(
           "%c[prediit] ⏳ Polling will be disabled once React mounts",
-          "color:#fbbf24"
+          "color:#ffffff"
         );
         // Retry every 2s for up to 10s
         let retries = 0;

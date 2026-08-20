@@ -74,13 +74,14 @@ export async function t() {
     .from('orders')
     .select('*')
     .eq('user_id', user.id)
+    .eq('asset_type', 'gold')
     .order('created_at', { ascending: false });
 
   return {
     gold: profile?.gold ?? 0,
     cost: settings?.spin_cost ?? 50,
     packages,
-    orders: orders || [],
+    orders: (orders || []).map(order => ({ ...order, coins: order.diamonds })),
     profile: {
       status: profile?.status ?? 'pending',
       country: profile?.country || null
@@ -123,25 +124,22 @@ export async function r(props) {
     .upload(screenshotPath, fileBytes, { contentType: 'image/png' });
   if (uploadErr) throw uploadErr;
 
-  const { data, error } = await supabase
-    .from('orders')
-    .insert({
-      user_id: user.id,
-      email: user.email,
-      package_name: pkg.name + ' Gold',
-      diamonds: pkg.coins,
-      amount: Number(amount),
-      currency,
-      method,
-      txn_id: txnId || null,
-      sender_name: senderName,
-      sender_number: senderNumber,
-      screenshot_path: screenshotPath,
-      status: 'pending'
-    })
-    .select()
-    .single();
+  const { data, error } = await supabase.rpc('submit_gold_order', {
+    p_package_name: pkg.name + ' Gold',
+    p_gold: pkg.coins,
+    p_amount: Number(amount),
+    p_currency: currency,
+    p_method: method,
+    p_txn_id: txnId || null,
+    p_sender_name: senderName,
+    p_sender_number: senderNumber,
+    p_screenshot_path: screenshotPath
+  });
 
-  if (error) throw error;
-  return { ok: true, order: data };
+  if (error || !data?.ok) {
+    await supabase.storage.from('screenshot-proofs').remove([screenshotPath]);
+    if (error) throw error;
+    throw new Error(data?.reason || 'Order submission failed');
+  }
+  return data;
 }

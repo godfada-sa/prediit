@@ -6,19 +6,17 @@ node_modules/
 .env.local
 .env.*.local
 
-# SQL migration files (contain schema + secrets)
-*.sql
-init_supabase.sql
-admin_security_fix.sql
-fix_realtime_and_security.sql
-gold_purchase_flow.sql
-
-# Supabase edge function source
-supabase/
+# Database migrations and Edge Functions are application source and must be
+# versioned. Never put real credentials in SQL or function source.
+supabase/.temp/
+supabase/.branches/
+supabase/.env
+supabase/.env.*
 
 # Vercel
 .vercel/
 .freebuff/
+.tool-preview/
 
 # Build output
 dist/
