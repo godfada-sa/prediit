@@ -87,32 +87,64 @@ export async function t() {
 
 async function callGeminiVision(fileBase64, mime, geminiKey) {
   const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`;
-  const prompt = `You are a virtual football analyst. This is a screenshot from an instant virtual football game (e.g. VGames, Bet9ja Virtuals, SportyBet Virtuals).
+  const prompt = `You are an expert virtual football analyst specializing in instant virtual football algorithms (VGames, Bet9ja Virtuals, SportyBet Virtuals, EA SPORTS FIFA simulations).
 
-CRITICAL INSTRUCTIONS:
-1. READ THE IMAGE CAREFULLY. Extract EVERY fixture you can see from the screenshot — the exact team names as they appear in the image.
-2. Do NOT invent, guess, or use placeholder team names. Only use the team names VISIBLE IN THE IMAGE.
-3. If you cannot read team names clearly, extract whatever text you can see (abbreviations, partial names are fine).
-4. For each fixture, provide your prediction based on virtual football patterns.
-5. Return ONLY a JSON array, no markdown, no explanation.
+═══════════════════════════════════════
+STEP 1: READ THE IMAGE
+═══════════════════════════════════════
+- Extract EVERY fixture visible in the screenshot — exact team names as shown.
+- Note any visible data: league position, form (W/D/L indicators), odds if shown, round/matchday number.
+- Do NOT invent team names. Use only what you can read.
 
-Return JSON array (one object per fixture found in the image):
+═══════════════════════════════════════
+STEP 2: UNDERSTAND THE ALGORITHM
+═══════════════════════════════════════
+Virtual football follows algorithmic patterns:
+
+HOME ADVANTAGE: Virtual leagues are biased toward home wins (~50-55%). Teams at home win more often than in real football.
+
+DRAWS ARE RARE: Only ~20-22% of virtual matches end in draws. Avoid drawing picks unless there's a strong pattern.
+
+GOALS PATTERN: ~58% of instant virtual matches have Over 2.5 goals. Common scores: 2-1, 1-0, 2-0, 3-1.
+
+FORM MOMENTUM: In virtual leagues, strong teams on winning streaks tend to continue winning. Weak teams on losing streaks keep losing. The algorithm is less "random" than real football.
+
+FAVORITE DOMINANCE: Teams ranked higher in the virtual table win ~65-70% of the time against lower-ranked opponents.
+
+SCORE PATTERNS: 2-1 is the most common virtual score (~18%). 1-0 is second (~14%). 2-0 third (~12%). High scores (3+) are less common but happen when strong meets weak.
+
+ROUND RESET: Early in a virtual season, outcomes are more unpredictable. Mid-to-late season, form patterns are more reliable.
+
+═══════════════════════════════════════
+STEP 3: MAKE SMART PICKS
+═══════════════════════════════════════
+For each fixture, analyze:
+1. Home vs Away strength (home team usually stronger in virtuals)
+2. Form indicators if visible (W=win, D=draw, L=loss)
+3. League position if visible
+4. Historical virtual football patterns
+
+Pick the outcome with highest probability. Include draw only when teams look evenly matched.
+
+═══════════════════════════════════════
+RETURN FORMAT — raw JSON array only:
+═══════════════════════════════════════
 [{
-  "home": "<exact home team name from image>",
-  "away": "<exact away team name from image>",
+  "home": "<exact team name from image>",
+  "away": "<exact team name from image>",
   "homeDomain": "",
   "awayDomain": "",
-  "probabilities": {"home": <number>, "draw": <number>, "away": <number>},
+  "probabilities": {"home": <number 15-75>, "draw": <number 10-25>, "away": <number 10-50>},
   "pick": "1" or "X" or "2",
   "pickLabel": "Home Win" or "Draw" or "Away Win",
   "drawChance": <number>,
   "correctScore": "X-X",
   "goals": "Over 2.5" or "Under 2.5",
-  "confidence": <number 60-99>,
-  "note": "<brief reasoning>"
+  "confidence": <number 65-99>,
+  "note": "<2-3 word reason: e.g. Home form strong, Favorite dominance, Evenly matched>"
 }]
 
-Remember: ONLY use team names you can ACTUALLY READ in the image. Do not make up team names.`;
+IMPORTANT: Use ONLY team names from the image. Match the exact names visible.`;
 
   const payload = {
     contents: [
