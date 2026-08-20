@@ -68,12 +68,11 @@ export async function t() {
   };
 }
 
-// ── OCR: extract text from screenshot ──────────────────────────────────────
+// ── OCR engine ─────────────────────────────────────────────────────────────
 let _tesseract = null;
 async function loadTesseract() {
   if (_tesseract) return _tesseract;
   return new Promise((resolve, reject) => {
-    // Already loaded globally?
     if (window.Tesseract) { _tesseract = window.Tesseract; resolve(_tesseract); return; }
     const s = document.createElement('script');
     s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
@@ -97,79 +96,55 @@ async function ocrExtract(fileBase64, mime) {
 
   URL.revokeObjectURL(url);
   const text = result?.data?.text || '';
-  console.log('[prediit] OCR extracted text (' + text.length + ' chars):', text.substring(0, 800));
+  console.log('[prediit] OCR raw (' + text.length + ' chars):', text);
   return text;
+}
+
+// ── Clean OCR: extract only team-like lines ────────────────────────────────
+function cleanOcrText(raw) {
+  // Split into lines, filter out junk
+  const lines = raw.split('\n').map(l => l.trim()).filter(l => l.length > 1);
+  // Keep lines that have at least 2 words and contain letters (team names)
+  const teamLines = lines.filter(l => {
+    const letters = l.replace(/[^a-zA-Z]/g, '');
+    return letters.length >= 4 && l.split(/\s+/).length >= 2;
+  });
+  const cleaned = teamLines.join('\n');
+  console.log('[prediit] OCR cleaned (' + cleaned.length + ' chars):', cleaned);
+  return cleaned || raw.substring(0, 1000);
 }
 
 // ── Gemini Vision with OCR pre-processing ──────────────────────────────────
 async function callGeminiVision(fileBase64, mime, geminiKey) {
   const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`;
 
-  // Step 1: OCR the screenshot to extract real team names
+  // Step 1: OCR
   let ocrText = '';
   try {
-    ocrText = await ocrExtract(fileBase64, mime);
+    const raw = await ocrExtract(fileBase64, mime);
+    ocrText = cleanOcrText(raw);
   } catch (ocrErr) {
     console.error('[prediit] OCR failed:', ocrErr?.message);
   }
 
-  // Step 2: Send image + OCR text to Gemini for smart prediction
-  const prompt = `You are an expert virtual football analyst. This is a screenshot from an instant virtual football game.
+  // Step 2: Gemini — OCR text is the PRIMARY input, image is secondary
+  const prompt = `TASK: Predict outcomes for virtual football matches found in the OCR text below.
 
-═══════════════════════════════════════
-OCR-EXTRACTED TEXT FROM SCREENSHOT:
-═══════════════════════════════════════
-${ocrText || '(OCR failed — read the image directly)'}
+THESE ARE THE TEAMS FROM THE SCREENSHOT (extracted by OCR — these are REAL, not examples):
+${ocrText || 'No text extracted — read the image instead'}
 
-═══════════════════════════════════════
-HOW TO USE THIS DATA:
-═══════════════════════════════════════
-1. The OCR text above contains ALL text visible in the screenshot.
-2. Look for team name pairs — each line or group with two team names is a fixture.
-3. Match OCR text with the image to confirm each home vs away fixture.
-4. If OCR missed teams, read them from the image.
-5. Note any form (W/D/L), league position, odds, round number.
-6. DO NOT invent team names — use ONLY what you find in the OCR text or image.
+INSTRUCTIONS:
+- The team names listed above are REAL teams from the user's screenshot.
+- Match each pair as a fixture (first vs second, third vs fourth, etc.)
+- Predict the outcome for EACH fixture using virtual football patterns
+- Home wins ~50-55%, draws ~20-22%, Over 2.5 goals ~58%
+- Top teams beat lower teams ~65-70%
+- Most common score: 2-1 (18%), 1-0 (14%), 2-0 (12%)
 
-═══════════════════════════════════════
-VIRTUAL FOOTBALL ALGORITHM:
-═══════════════════════════════════════
-• Home wins ~50-55% (stronger bias than real football)
-• Draws only ~20-22% — rare, avoid unless evenly matched
-• ~58% Over 2.5 goals; common scores: 2-1, 1-0, 2-0
-• Form momentum: winning teams keep winning, losers keep losing
-• Top-ranked teams beat lower-ranked ~65-70% of the time
-• Most common score: 2-1 (18%), then 1-0 (14%), then 2-0 (12%)
+OUTPUT: raw JSON array (one object per fixture from the OCR text above):
+[{"home":"<team from OCR>","away":"<team from OCR>","homeDomain":"","awayDomain":"","probabilities":{"home":55,"draw":22,"away":23},"pick":"1","pickLabel":"Home Win","drawChance":22,"correctScore":"2-1","goals":"Over 2.5","confidence":78,"note":"Home advantage"}]
 
-═══════════════════════════════════════
-ANALYZE EACH FIXTURE AND RETURN:
-═══════════════════════════════════════
-For each fixture found, provide:
-- Which teams are playing (from OCR/image)
-- Home win, draw, or away win probability
-- Your pick (1, X, or 2)
-- Correct score prediction
-- Over/Under 2.5 goals
-- Confidence (65-99)
-- Brief reason (2-4 words)
-
-RETURN ONLY a raw JSON array — no markdown, no explanation text:
-[{
-  "home": "<team from OCR/image>",
-  "away": "<team from OCR/image>",
-  "homeDomain": "",
-  "awayDomain": "",
-  "probabilities": {"home": <15-75>, "draw": <10-25>, "away": <10-50>},
-  "pick": "1" or "X" or "2",
-  "pickLabel": "Home Win" or "Draw" or "Away Win",
-  "drawChance": <number>,
-  "correctScore": "X-X",
-  "goals": "Over 2.5" or "Under 2.5",
-  "confidence": <65-99>,
-  "note": "<brief reason>"
-}]
-
-RULE: Only use team names found in the OCR text or visible in the image.`;
+CRITICAL: Use ONLY the team names from the OCR text above. Do NOT use Chelsea, Arsenal, Liverpool, Man City, Real Madrid, Barcelona, Bayern, or PSG unless they appear in the OCR text.`;
 
   const payload = {
     contents: [{
@@ -194,7 +169,9 @@ RULE: Only use team names found in the OCR text or visible in the image.`;
   const resJson = await response.json();
   const rawText = resJson?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? "";
   const cleaned = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
-  return JSON.parse(cleaned);
+  const parsed = JSON.parse(cleaned);
+  console.log('[prediit] Gemini predicted:', parsed.map(m => m.home + ' vs ' + m.away));
+  return parsed;
 }
 
 // POST: get-prediction — OCR + Gemini Vision → atomic server-side RPC
@@ -209,23 +186,21 @@ export async function n(props) {
   try {
     const { data: keyData } = await supabase.rpc('get_gemini_key').maybeSingle();
     let geminiKey = keyData?.gemini_api_key || null;
-    console.log('[prediit] Gemini key:', !!geminiKey, '| file:', fileBase64?.length || 0, '| mime:', mime);
+    console.log('[prediit] Gemini key:', !!geminiKey, '| file:', fileBase64?.length || 0);
 
     if (geminiKey && fileBase64) {
       matches = await callGeminiVision(fileBase64, mime || 'image/jpeg', geminiKey);
-      console.log('[prediit] Gemini returned', matches?.length, 'matches:', matches?.map(m => m.home + ' vs ' + m.away));
-      if (Array.isArray(matches) && matches.length > 0) {
-        usedGemini = true;
-      }
+      if (Array.isArray(matches) && matches.length > 0) usedGemini = true;
     } else {
       console.warn('[prediit] Gemini skipped — key:', !!geminiKey, 'file:', !!fileBase64);
     }
-  } catch (geminiErr) {
-    console.error('[prediit] Gemini/OCR FAILED:', geminiErr?.message || geminiErr);
+  } catch (err) {
+    console.error('[prediit] Gemini/OCR FAILED:', err?.message || err);
   }
 
-  // Fallback: random predictions if OCR+Gemini unavailable or failed
+  // Fallback
   if (!usedGemini) {
+    console.warn('[prediit] Using fallback model (no AI prediction)');
     const teams = [
       { name: "Arsenal", domain: "arsenal.com" },
       { name: "Chelsea", domain: "chelseafc.com" },
@@ -261,15 +236,14 @@ export async function n(props) {
         correctScore,
         goals: Math.random() > 0.5 ? "Over 2.5" : "Under 2.5",
         probabilities: { home: probHome, draw: probDraw, away: probAway },
-        note: "Fallback model (upload screenshot for AI analysis)"
+        note: "Fallback model — upload screenshot for AI analysis"
       });
     }
   }
 
-  // Atomic server-side: deducts diamonds + inserts prediction
   const { data: rpcResult, error: rpcErr } = await supabase.rpc('submit_prediction', {
     p_user_id: user.id,
-    p_result: { matches, source: usedGemini ? 'gemini' : 'model' },
+    p_result: { matches, source: usedGemini ? 'gemini+ocr' : 'model' },
     p_cost: 0
   });
 
@@ -279,7 +253,7 @@ export async function n(props) {
   return { ok: true, matches, source: usedGemini ? 'gemini+ocr' : 'model' };
 }
 
-// POST: history clear/delete function
+// POST: history clear/delete
 export async function r(props) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Unauthorized");
@@ -291,7 +265,6 @@ export async function r(props) {
       .from('predictions')
       .delete()
       .eq('user_id', user.id);
-
     if (error) throw error;
   } else {
     const { error } = await supabase
@@ -299,7 +272,6 @@ export async function r(props) {
       .delete()
       .eq('id', id)
       .eq('user_id', user.id);
-
     if (error) throw error;
   }
 
