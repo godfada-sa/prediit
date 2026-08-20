@@ -21,6 +21,7 @@ supabase/.env.*
 # Build output
 dist/
 build/
+public/
 
 # OS files
 .DS_Store
