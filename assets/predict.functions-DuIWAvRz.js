@@ -102,21 +102,30 @@ async function ocrExtract(fileBase64, mime) {
 
 // ── Clean OCR: extract only team-like lines ────────────────────────────────
 function cleanOcrText(raw) {
-  // Split into lines, filter out junk
-  const lines = raw.split('\n').map(l => l.trim()).filter(l => l.length > 1);
-  // Keep lines that have at least 2 words and contain letters (team names)
-  const teamLines = lines.filter(l => {
-    const letters = l.replace(/[^a-zA-Z]/g, '');
-    return letters.length >= 4 && l.split(/\s+/).length >= 2;
-  });
-  const cleaned = teamLines.join('\n');
+  const lines = raw.split('\n').map(l => l.trim());
+  const fixtures = [];
+  for (const line of lines) {
+    // Match pattern: TEAM vs TEAM (with optional junk after)
+    const vsMatch = line.match(/([A-Za-z][A-Za-z\s.]{1,20})\s+vs\.?\s+([A-Za-z][A-Za-z\s.]{1,20})/i);
+    if (vsMatch) {
+      let home = vsMatch[1].replace(/[^A-Za-z\s]/g, '').trim();
+      let away = vsMatch[2].replace(/[^A-Za-z\s]/g, '').trim();
+      // Remove trailing junk words
+      home = home.split(/\s+/).filter(w => w.length > 1).join(' ');
+      away = away.split(/\s+/).filter(w => w.length > 1).join(' ');
+      if (home.length >= 2 && away.length >= 2) {
+        fixtures.push(home + ' vs ' + away);
+      }
+    }
+  }
+  const cleaned = fixtures.join('\n');
   console.log('[prediit] OCR cleaned (' + cleaned.length + ' chars):', cleaned);
-  return cleaned || raw.substring(0, 1000);
+  return cleaned || raw.substring(0, 500);
 }
 
 // ── Gemini Vision with OCR pre-processing ──────────────────────────────────
 async function callGeminiVision(fileBase64, mime, geminiKey) {
-  const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`;
+  const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`;
 
   // Step 1: OCR
   let ocrText = '';
