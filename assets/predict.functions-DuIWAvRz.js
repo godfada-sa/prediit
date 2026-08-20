@@ -207,45 +207,29 @@ export async function n(props) {
     console.error('[prediit] Gemini/OCR FAILED:', err?.message || err);
   }
 
-  // Fallback — use OCR teams if available, otherwise random virtual teams
+  // Fallback — use OCR teams only (random picks/scores)
   if (!usedGemini) {
-    console.warn('[prediit] Using fallback model (no AI prediction)');
+    console.warn('[prediit] Gemini failed — using OCR fallback');
 
-    // Pool of virtual football team names (SportyBet/VGames style)
-    const virtualTeams = [
-      'Man Utd','Tottenham','Newcastle','Aston Villa','West Ham','Brighton','Crystal Palace','Wolves',
-      'Everton','Fulham','Brentford','Bournemouth','Nottingham','Leicester','Leeds','Southampton',
-      'Inter Milan','AC Milan','Juventus','Napoli','Roma','Lazio','Atalanta','Fiorentina',
-      'Dortmund','Leipzig','Leverkusen','Wolfsburg','Frankfurt','Freiburg','Monchengladbach','Hoffenheim',
-      'Lyon','Marseille','Monaco','Nice','Lille','Rennes','Montpellier','Strasbourg',
-      'Porto','Benfica','Sporting CP','Braga','Real Sociedad','Villarreal','Sevilla','Athletic Bilbao'
-    ];
-
-    // If OCR extracted real teams, use those instead
-    let teamPool = virtualTeams;
+    // Parse OCR text into fixture pairs
+    const ocrFixtures = [];
     if (ocrText && ocrText.length > 5) {
-      const ocrTeams = [];
-      const ocrLines = ocrText.split('\n');
-      for (const line of ocrLines) {
-        const parts = line.split(/\s+vs\.?\s+/i);
-        for (const p of parts) {
-          const clean = p.replace(/[^A-Za-z\s]/g, '').trim();
-          if (clean.length >= 2) ocrTeams.push(clean);
+      const lines = ocrText.split('\n');
+      for (const line of lines) {
+        const vsMatch = line.match(/([A-Za-z][A-Za-z\s]{1,20})\s+vs\.?\s+([A-Za-z][A-Za-z\s]{1,20})/i);
+        if (vsMatch) {
+          const home = vsMatch[1].trim();
+          const away = vsMatch[2].trim();
+          if (home.length >= 2 && away.length >= 2) {
+            ocrFixtures.push({ home, away });
+          }
         }
-      }
-      if (ocrTeams.length >= 4) {
-        teamPool = ocrTeams;
-        console.log('[prediit] Fallback using OCR teams:', ocrTeams);
       }
     }
 
-    // Shuffle and pick random pairs
-    const shuffled = [...teamPool].sort(() => Math.random() - 0.5);
-    const fixtureCount = Math.min(3, Math.floor(shuffled.length / 2));
+    console.log('[prediit] Fallback fixtures from OCR:', ocrFixtures.map(f => f.home + ' vs ' + f.away));
 
-    for (let i = 0; i < fixtureCount; i++) {
-      const homeName = shuffled[i * 2];
-      const awayName = shuffled[i * 2 + 1];
+    for (const fix of ocrFixtures) {
       const probHome = Math.floor(Math.random() * 50) + 20;
       const probDraw = Math.floor(Math.random() * 20) + 10;
       const probAway = 100 - probHome - probDraw;
@@ -259,7 +243,7 @@ export async function n(props) {
       else if (pick === "X") correctScore = `${Math.floor(Math.random() * 2) + 1} - ${Math.floor(Math.random() * 2) + 1}`;
       else correctScore = `${Math.floor(Math.random() * 2)} - ${Math.floor(Math.random() * 3) + 1}`;
       matches.push({
-        home: homeName, away: awayName,
+        home: fix.home, away: fix.away,
         homeDomain: '', awayDomain: '',
         pick, pickLabel,
         confidence: Math.max(probHome, probDraw, probAway),
@@ -267,8 +251,12 @@ export async function n(props) {
         correctScore,
         goals: Math.random() > 0.5 ? "Over 2.5" : "Under 2.5",
         probabilities: { home: probHome, draw: probDraw, away: probAway },
-        note: teamPool === ocrTeams ? "Fallback from OCR teams" : "Fallback — upload screenshot for AI"
+        note: "Fallback from OCR teams"
       });
+    }
+
+    if (matches.length === 0) {
+      console.warn('[prediit] No OCR teams found — cannot predict without screenshot');
     }
   }
 
