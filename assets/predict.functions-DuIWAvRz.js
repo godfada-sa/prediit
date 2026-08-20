@@ -87,32 +87,32 @@ export async function t() {
 
 async function callGeminiVision(fileBase64, mime, geminiKey) {
   const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`;
-  const prompt = `Analyze this virtual football fixture screenshot.
-Extract all home and away team names from the fixtures list.
-For each fixture detected, predict the virtual game outcome and return EXACTLY a JSON array matching the structure below.
-Do not wrap it in markdown block tags like \`\`\`json. Just return raw JSON.
+  const prompt = `You are a virtual football analyst. This is a screenshot from an instant virtual football game (e.g. VGames, Bet9ja Virtuals, SportyBet Virtuals).
 
-JSON Schema example:
-[
-  {
-    "home": "Arsenal",
-    "away": "Chelsea",
-    "homeDomain": "arsenal.com",
-    "awayDomain": "chelseafc.com",
-    "probabilities": {
-      "home": 65,
-      "draw": 20,
-      "away": 15
-    },
-    "pick": "1",
-    "pickLabel": "Home Win",
-    "drawChance": 20,
-    "correctScore": "2-1",
-    "goals": "Over 2.5",
-    "confidence": 85,
-    "note": "High momentum and attacking form detected."
-  }
-]`;
+CRITICAL INSTRUCTIONS:
+1. READ THE IMAGE CAREFULLY. Extract EVERY fixture you can see from the screenshot — the exact team names as they appear in the image.
+2. Do NOT invent, guess, or use placeholder team names. Only use the team names VISIBLE IN THE IMAGE.
+3. If you cannot read team names clearly, extract whatever text you can see (abbreviations, partial names are fine).
+4. For each fixture, provide your prediction based on virtual football patterns.
+5. Return ONLY a JSON array, no markdown, no explanation.
+
+Return JSON array (one object per fixture found in the image):
+[{
+  "home": "<exact home team name from image>",
+  "away": "<exact away team name from image>",
+  "homeDomain": "",
+  "awayDomain": "",
+  "probabilities": {"home": <number>, "draw": <number>, "away": <number>},
+  "pick": "1" or "X" or "2",
+  "pickLabel": "Home Win" or "Draw" or "Away Win",
+  "drawChance": <number>,
+  "correctScore": "X-X",
+  "goals": "Over 2.5" or "Under 2.5",
+  "confidence": <number 60-99>,
+  "note": "<brief reasoning>"
+}]
+
+Remember: ONLY use team names you can ACTUALLY READ in the image. Do not make up team names.`;
 
   const payload = {
     contents: [
@@ -161,15 +161,19 @@ export async function n(props) {
   try {
     const { data: keyData } = await supabase.rpc('get_gemini_key').maybeSingle();
     let geminiKey = keyData?.gemini_api_key || null;
+    console.log('[prediit] Gemini key present:', !!geminiKey, '| fileBase64 length:', fileBase64?.length || 0, '| mime:', mime);
 
     if (geminiKey && fileBase64) {
       matches = await callGeminiVision(fileBase64, mime || 'image/jpeg', geminiKey);
+      console.log('[prediit] Gemini returned', matches?.length, 'matches:', matches?.map(m => m.home + ' vs ' + m.away));
       if (Array.isArray(matches) && matches.length > 0) {
         usedGemini = true;
       }
+    } else {
+      console.warn('[prediit] Gemini skipped — key:', !!geminiKey, 'file:', !!fileBase64);
     }
   } catch (geminiErr) {
-    console.warn('[prediit] Gemini vision failed, falling back to model:', geminiErr?.message);
+    console.error('[prediit] Gemini vision FAILED:', geminiErr?.message || geminiErr);
   }
 
   // Fallback: random predictions if Gemini unavailable or failed
