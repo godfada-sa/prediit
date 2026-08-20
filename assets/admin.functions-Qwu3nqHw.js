@@ -194,19 +194,32 @@ export async function n(props) {
 // POST: submit payment proof / order proof (imported as h in checkout)
 export async function h(props) {
   const { country, method, amount, currency, senderName, senderNumber, txnId, fileName, fileBase64, packageName, diamonds } = props?.data ?? {};
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Please sign in to submit your proof");
+
+  // Get user — try getUser first, fall back to getSession
+  let userId = null;
+  let userEmail = null;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) { userId = user.id; userEmail = user.email; }
+  } catch(e) { /* ignore */ }
+  if (!userId) {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) { userId = session.user.id; userEmail = session.user.email; }
+  }
+  if (!userId) throw new Error("Please sign in to submit your proof");
 
   const fileBytes = Uint8Array.from(atob(fileBase64), c => c.charCodeAt(0));
+  const screenshotPath = `${userId}/${Date.now()}-${fileName}`;
 
+  // Try upload — use payment-proofs for registration, screenshot-proofs for orders
+  const bucket = (packageName || diamonds) ? 'screenshot-proofs' : 'payment-proofs';
+  const { error: uploadError } = await supabase.storage
+    .from(bucket)
+    .upload(screenshotPath, fileBytes, { contentType: 'image/png' });
+  if (uploadError) throw new Error('Screenshot upload failed: ' + uploadError.message);
+
+  // Use RPC for the database insert
   if (packageName || diamonds) {
-    // Diamond Purchase — upload to storage, then use RPC
-    const screenshotPath = `${user.id}/${Date.now()}-${fileName}`;
-    const { error: uploadError } = await supabase.storage
-      .from('screenshot-proofs')
-      .upload(screenshotPath, fileBytes, { contentType: 'image/png' });
-    if (uploadError) throw new Error('Screenshot upload failed: ' + uploadError.message);
-
     const { data: rpcResult, error: rpcErr } = await supabase.rpc('submit_gold_order', {
       p_package_name: packageName,
       p_gold: Number(diamonds),
@@ -222,13 +235,6 @@ export async function h(props) {
     if (!rpcResult?.ok) throw new Error(rpcResult?.reason || 'Submission failed');
     return { ok: true, order: rpcResult.order };
   } else {
-    // Registration Payment — upload to storage, then use RPC
-    const screenshotPath = `${user.id}/${Date.now()}-${fileName}`;
-    const { error: uploadError } = await supabase.storage
-      .from('payment-proofs')
-      .upload(screenshotPath, fileBytes, { contentType: 'image/png' });
-    if (uploadError) throw new Error('Screenshot upload failed: ' + uploadError.message);
-
     const { data: rpcResult, error: rpcErr } = await supabase.rpc('submit_registration_payment', {
       p_country: country,
       p_method: method,
