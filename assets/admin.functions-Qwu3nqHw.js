@@ -82,6 +82,8 @@ export async function i() {
       efootball: data.efootball || [],
       ticketTransactions: data.ticketTransactions || [],
       spinSignals: data.spinSignals || [],
+      goldTransactions: data.goldTransactions || [],
+      settings: data.settings || {},
       pricing: data.pricing || {
         prediction_cost: 50,
         efootball_cost: 1,
