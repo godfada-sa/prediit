@@ -125,7 +125,7 @@ function cleanOcrText(raw) {
 
 // ── Gemini Vision with OCR pre-processing ──────────────────────────────────
 async function callGeminiVision(fileBase64, mime, geminiKey) {
-  const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`;
+  const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${geminiKey}`;
 
   // Step 1: OCR
   let ocrText = '';
